@@ -1,0 +1,139 @@
+/* ==========================================================================
+   TRON GOLF — shared theme tokens
+   Single source of truth for palette, typography, spacing and border
+   geometry. Every screen composes from these; no screen defines its own
+   colours or header proportions.
+   ========================================================================== */
+
+:root {
+  /* --- surfaces --------------------------------------------------------- */
+  --bg: #050a12;
+  --bg-deep: #02060c;
+  --panel: #0a1622;
+  --panel-hi: #0f2030;
+  --panel-sunk: #061019;
+
+  /* --- illuminated borders ---------------------------------------------- */
+  --cyan: #35e0ff;
+  --cyan-dim: #1a7d99;
+  --cyan-faint: #12414f;
+  --cyan-glow: rgba(53, 224, 255, 0.35);
+
+  /* --- accents ----------------------------------------------------------- */
+  --amber: #ffb02e;
+  --amber-dim: #8a5c12;
+  --amber-glow: rgba(255, 176, 46, 0.35);
+  --red: #ff4d5e;
+  --green: #38f2a0;
+
+  /* --- text -------------------------------------------------------------- */
+  --text: #e8f4ff;
+  --text-dim: #7f9bb0;
+  --text-faint: #4a6274;
+  --on-amber: #1a0f00;
+
+  /* --- typography -------------------------------------------------------- */
+  /* Pixel face: screen titles, primary buttons, important labels. */
+  --font-pixel: 'Press Start 2P', 'Courier New', monospace;
+  /* Narrow mono: hole numbers, scores, distances, tables, supporting info. */
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+
+  --fs-title: 13px;
+  --fs-btn: 11px;
+  --fs-label: 9px;
+  --fs-micro: 8px;
+  --fs-body: 14px;
+  --fs-num: 17px;
+  --fs-num-lg: 30px;
+
+  /* --- spacing system ---------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+
+  /* --- border geometry --------------------------------------------------- */
+  --bw: 1px;
+  --radius: 0px; /* pixel interface: square corners everywhere */
+
+  /* --- chrome proportions (identical on every screen) -------------------- */
+  --header-h: 52px;
+  --nav-h: 56px;
+
+  /* --- touch ------------------------------------------------------------- */
+  --tap: 44px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle grid texture, applied behind the whole app shell. */
+.grid-texture {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(53, 224, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(53, 224, 255, 0.045) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  font-family: var(--font-mono);
+}
+
+/* --- shared type helpers ------------------------------------------------ */
+.t-pixel {
+  font-family: var(--font-pixel);
+  letter-spacing: 0.5px;
+}
+.t-label {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-label);
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+.t-num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-num);
+  letter-spacing: 0.5px;
+}
+.t-dim {
+  color: var(--text-dim);
+}
+.c-cyan {
+  color: var(--cyan);
+}
+.c-amber {
+  color: var(--amber);
+}
+.c-red {
+  color: var(--red);
+}
+.c-green {
+  color: var(--green);
+}

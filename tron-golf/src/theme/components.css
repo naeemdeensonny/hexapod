@@ -1,0 +1,569 @@
+/* ==========================================================================
+   TRON GOLF — reusable UI primitives
+   Header, panel, button, nav, stepper, list card and table styles shared by
+   every screen so the chrome stays identical throughout the app.
+   ========================================================================== */
+
+/* --- app shell ---------------------------------------------------------- */
+.app {
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  border-left: var(--bw) solid var(--cyan-faint);
+  border-right: var(--bw) solid var(--cyan-faint);
+  position: relative;
+  overflow: hidden;
+}
+
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.screen-body.flush {
+  padding: 0;
+  gap: 0;
+}
+
+/* --- header ------------------------------------------------------------- */
+.hdr {
+  height: var(--header-h);
+  flex: 0 0 var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+  border-bottom: var(--bw) solid var(--cyan-dim);
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  box-shadow: 0 1px 0 var(--cyan-glow);
+}
+
+.hdr__title {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-title);
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hdr__sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+.hdr__back {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+/* --- panel -------------------------------------------------------------- */
+.panel {
+  background: var(--panel);
+  border: var(--bw) solid var(--cyan-dim);
+  box-shadow: inset 0 0 12px rgba(53, 224, 255, 0.06);
+  padding: var(--sp-3);
+}
+
+.panel--sunk {
+  background: var(--panel-sunk);
+  border-color: var(--cyan-faint);
+}
+
+.panel__title {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-label);
+  color: var(--cyan);
+  margin: 0 0 var(--sp-2);
+  letter-spacing: 0.5px;
+}
+
+/* --- key/value rows ----------------------------------------------------- */
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 5px 0;
+  border-bottom: var(--bw) dashed var(--cyan-faint);
+}
+.kv:last-child {
+  border-bottom: 0;
+}
+.kv__k {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+.kv__v {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* --- buttons ------------------------------------------------------------ */
+.btn {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--sp-3) var(--sp-2);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-btn);
+  letter-spacing: 0.5px;
+  text-align: center;
+  background: var(--panel);
+  color: var(--text);
+  border: var(--bw) solid var(--cyan-dim);
+  box-shadow: inset 0 0 10px rgba(53, 224, 255, 0.08);
+  transition: transform 0.05s ease;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--amber);
+  color: var(--on-amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 12px var(--amber-glow);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--cyan);
+}
+
+.btn--danger {
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
+  box-shadow: none;
+}
+
+.btn--sm {
+  min-height: 36px;
+  padding: var(--sp-2);
+  font-size: var(--fs-micro);
+}
+
+.btn-row {
+  display: flex;
+  gap: var(--sp-2);
+}
+.btn-row > * {
+  flex: 1;
+}
+
+/* --- bottom navigation -------------------------------------------------- */
+.nav {
+  height: var(--nav-h);
+  flex: 0 0 var(--nav-h);
+  display: flex;
+  border-top: var(--bw) solid var(--cyan-dim);
+  background: var(--panel);
+}
+
+.nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: 0;
+  border-right: var(--bw) solid var(--cyan-faint);
+  color: var(--text-dim);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  padding: 0 2px;
+}
+.nav__item:last-child {
+  border-right: 0;
+}
+.nav__item--active {
+  color: var(--amber);
+  background: rgba(255, 176, 46, 0.09);
+  box-shadow: inset 0 2px 0 var(--amber);
+}
+
+/* --- stepper ( [-] value [+] ) ------------------------------------------ */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.stepper__btn {
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 0;
+}
+.stepper__btn:active {
+  background: var(--panel-hi);
+}
+.stepper__val {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 26px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+
+/* --- segmented control -------------------------------------------------- */
+.seg {
+  display: flex;
+  border: var(--bw) solid var(--cyan-dim);
+}
+.seg__opt {
+  flex: 1;
+  min-height: 38px;
+  background: var(--panel-sunk);
+  border: 0;
+  border-right: var(--bw) solid var(--cyan-faint);
+  color: var(--text-dim);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-micro);
+  padding: 0 var(--sp-1);
+}
+.seg__opt:last-child {
+  border-right: 0;
+}
+.seg__opt--on {
+  background: rgba(53, 224, 255, 0.16);
+  color: var(--cyan);
+}
+
+/* --- list cards --------------------------------------------------------- */
+.card {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: var(--bw) solid var(--cyan-faint);
+  padding: var(--sp-2);
+}
+.card--on {
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+.card__thumb {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border: var(--bw) solid var(--cyan-faint);
+  background: var(--panel-sunk);
+  object-fit: cover;
+  display: block;
+}
+.card__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.card__name {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card__meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.card__arrow {
+  align-self: center;
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding-right: var(--sp-1);
+}
+
+/* --- form fields -------------------------------------------------------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.field > label {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+.input {
+  width: 100%;
+  min-height: var(--tap);
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-dim);
+  color: var(--text);
+  font-size: 15px;
+  padding: var(--sp-2);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
+
+/* --- toggle ------------------------------------------------------------- */
+.toggle {
+  width: 56px;
+  height: 30px;
+  flex: 0 0 56px;
+  border: var(--bw) solid var(--cyan-dim);
+  background: var(--panel-sunk);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.toggle__knob {
+  width: 24px;
+  height: 22px;
+  background: var(--text-faint);
+  transition: transform 0.1s steps(3);
+}
+.toggle--on {
+  border-color: var(--green);
+}
+.toggle--on .toggle__knob {
+  background: var(--green);
+  transform: translateX(26px);
+}
+
+/* --- scorecard table ---------------------------------------------------- */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.tbl th {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--text-dim);
+  font-weight: normal;
+  padding: var(--sp-2) 2px;
+  border-bottom: var(--bw) solid var(--cyan-dim);
+  text-align: center;
+}
+.tbl td {
+  padding: 7px 2px;
+  text-align: center;
+  border-bottom: var(--bw) solid var(--cyan-faint);
+  color: var(--text);
+}
+.tbl tr:active td {
+  background: rgba(53, 224, 255, 0.1);
+}
+.tbl .row-total td {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-micro);
+  color: var(--cyan);
+  background: var(--panel-sunk);
+  border-bottom: var(--bw) solid var(--cyan-dim);
+}
+
+/* --- misc --------------------------------------------------------------- */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.muted {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.center {
+  text-align: center;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.empty {
+  padding: var(--sp-5) var(--sp-3);
+  text-align: center;
+  color: var(--text-faint);
+  font-family: var(--font-pixel);
+  font-size: var(--fs-label);
+  line-height: 1.9;
+}
+
+/* --- compact hole selector ---------------------------------------------- */
+.holesel {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  justify-items: center;
+  row-gap: 2px;
+  padding: var(--sp-2) 0;
+}
+.holesel__ghost {
+  grid-column: 2;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+}
+.holesel__now {
+  grid-column: 2;
+  font-family: var(--font-mono);
+  font-size: 40px;
+  line-height: 1.05;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px var(--cyan-glow);
+}
+.holesel__arrow {
+  width: var(--tap);
+  height: var(--tap);
+  grid-row: 2;
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 0;
+}
+.holesel__arrow:disabled {
+  opacity: 0.3;
+}
+.holesel__arrow--l {
+  grid-column: 1;
+}
+.holesel__arrow--r {
+  grid-column: 3;
+}
+
+/* --- play map layout ---------------------------------------------------- */
+.play {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.play__map {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border-bottom: var(--bw) solid var(--cyan-dim);
+}
+.play__hud {
+  position: absolute;
+  top: var(--sp-2);
+  left: var(--sp-2);
+  z-index: 500;
+  background: rgba(5, 10, 18, 0.82);
+  border: var(--bw) solid var(--cyan-dim);
+  padding: 6px var(--sp-2);
+  display: flex;
+  gap: var(--sp-3);
+}
+.play__hud div {
+  text-align: center;
+}
+.play__hud b {
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--text-dim);
+  font-weight: normal;
+  margin-bottom: 3px;
+}
+.play__hud span {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text);
+}
+.play__panel {
+  flex: 0 0 auto;
+  background: var(--panel);
+  padding: var(--sp-2) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.play__legs {
+  display: flex;
+  gap: var(--sp-2);
+}
+.play__leg {
+  flex: 1;
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-faint);
+  padding: 6px;
+  text-align: center;
+}
+.play__leg b {
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--text-dim);
+  font-weight: normal;
+  margin-bottom: 4px;
+}
+.play__leg span {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--amber);
+}
+
+/* --- resume overlay ----------------------------------------------------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(2, 6, 12, 0.88);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+}
+.overlay__box {
+  width: 100%;
+  max-width: 340px;
+  background: var(--panel);
+  border: var(--bw) solid var(--cyan);
+  box-shadow: 0 0 24px var(--cyan-glow);
+  padding: var(--sp-4);
+}
