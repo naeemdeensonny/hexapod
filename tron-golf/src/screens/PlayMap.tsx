@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Screen from '../components/Screen';
 import { Button } from '../components/ui';
-import GoogleMap, { markerIcon } from '../map/GoogleMap';
+import GoogleMap, { markerIcon, paddedBounds } from '../map/GoogleMap';
 import { distanceM, fmtDist } from '../state/geo';
 import { courseById, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
+
+/** Slack around the hole so the tee and green never sit hard against the edge. */
+const HOLE_PAD_M = 180;
 
 export default function PlayMap() {
   const nav = useNavigate();
@@ -23,6 +26,7 @@ export default function PlayMap() {
   const targetMarker = useRef<google.maps.Marker | null>(null);
   const legA = useRef<google.maps.Polyline | null>(null); // player → target
   const legB = useRef<google.maps.Polyline | null>(null); // target → green
+  const fenceRef = useRef<google.maps.LatLngBoundsLiteral | null>(null);
 
   const centre = hole?.tee ?? course?.centre ?? { lat: 0, lng: 0 };
 
@@ -47,6 +51,37 @@ export default function PlayMap() {
     if (hole?.greenCentre) setTarget(hole.greenCentre);
   }, [hole?.number, hole?.greenCentre]);
 
+  /* --- pan fence ----------------------------------------------------------- */
+
+  /** Restrict panning to the hole corridor, widened to keep `extra` reachable. */
+  function applyFence(m: google.maps.Map, extra?: LatLng | null) {
+    if (!hole) return;
+    const fence = paddedBounds(
+      [
+        hole.tee,
+        hole.greenFront,
+        hole.greenCentre,
+        hole.greenBack,
+        ...(hole.hazards ?? []).map((h) => h.point),
+        extra,
+      ],
+      HOLE_PAD_M,
+    );
+    fenceRef.current = fence;
+    m.setOptions({ restriction: fence ? { latLngBounds: fence, strictBounds: true } : null });
+  }
+
+  // A GPS fix outside the fence would otherwise be unreachable — widen it.
+  useEffect(() => {
+    const f = fenceRef.current;
+    if (!map || !player || !f) return;
+    const inside =
+      player.lat >= f.south && player.lat <= f.north &&
+      player.lng >= f.west && player.lng <= f.east;
+    if (!inside) applyFence(map, player);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, player]);
+
   /* --- static hole furniture ---------------------------------------------- */
   useEffect(() => {
     if (!map || !hole) return;
@@ -66,6 +101,8 @@ export default function PlayMap() {
     if (hole.greenBack) add(hole.greenBack, 'green', 'B', 'Back');
     for (const h of hole.hazards ?? []) add(h.point, 'hazard', h.name[0] ?? 'H', h.name);
 
+    applyFence(map, player);
+
     // Frame tee and green.
     const bounds = new google.maps.LatLngBounds();
     if (hole.tee) bounds.extend({ lat: hole.tee.lat, lng: hole.tee.lng });
@@ -76,6 +113,8 @@ export default function PlayMap() {
       staticMarkers.current.forEach((m) => m.setMap(null));
       staticMarkers.current = [];
     };
+    // `player` is read for the initial fence only; GPS ticks must not rebuild markers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, hole]);
 
   /* --- movable target ----------------------------------------------------- */

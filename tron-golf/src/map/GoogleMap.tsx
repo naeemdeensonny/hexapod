@@ -77,6 +77,44 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
   return <div ref={el} className={`sat-map ${className ?? ''}`} />;
 }
 
+/* --- bounds --------------------------------------------------------------- */
+
+const M_PER_DEG_LAT = 111_320;
+
+/**
+ * Axis-aligned box containing every point, expanded by `padM` metres on all
+ * sides. Used to fence the playing map to the current hole.
+ */
+export function paddedBounds(
+  points: (LatLng | undefined | null)[],
+  padM: number,
+): google.maps.LatLngBoundsLiteral | null {
+  const pts = points.filter((p): p is LatLng => !!p);
+  if (pts.length === 0) return null;
+
+  let north = -90;
+  let south = 90;
+  let east = -180;
+  let west = 180;
+  for (const p of pts) {
+    north = Math.max(north, p.lat);
+    south = Math.min(south, p.lat);
+    east = Math.max(east, p.lng);
+    west = Math.min(west, p.lng);
+  }
+
+  const dLat = padM / M_PER_DEG_LAT;
+  const midLat = ((north + south) / 2) * (Math.PI / 180);
+  const dLng = padM / (M_PER_DEG_LAT * Math.max(Math.cos(midLat), 0.01));
+
+  return {
+    north: Math.min(north + dLat, 85),
+    south: Math.max(south - dLat, -85),
+    east: Math.min(east + dLng, 180),
+    west: Math.max(west - dLng, -180),
+  };
+}
+
 /* --- marker icons --------------------------------------------------------- */
 
 function svgIcon(svg: string, w: number, h: number): google.maps.Icon {
