@@ -2,3 +2,9 @@ node_modules
 dist
 shots
 .env.local
+
+# Android build outputs (keep the project, ignore build artefacts)
+android/.gradle
+android/app/build
+android/build
+android/local.properties
