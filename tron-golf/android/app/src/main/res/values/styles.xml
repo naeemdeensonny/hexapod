@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Shows behind the system bars once the content root is inset. -->
+        <item name="android:windowBackground">#050A12</item>
     </style>
 
 
