@@ -2,11 +2,10 @@ import Screen from '../components/Screen';
 import { Panel, Segmented, SettingRow, Toggle } from '../components/ui';
 import { TEE_OPTIONS } from '../state/seed';
 import { updateSettings, useStore } from '../state/store';
-import { tileProvider } from '../map/provider';
+import { GOOGLE_MAPS_KEY } from '../map/provider';
 
 export default function Settings() {
   const { settings } = useStore();
-  const provider = tileProvider();
 
   return (
     <Screen title="SETTINGS">
@@ -67,7 +66,7 @@ export default function Settings() {
         <div className="kv">
           <span className="kv__k">IMAGERY</span>
           <span className="kv__v" style={{ fontSize: 12 }}>
-            {provider.id}
+            {GOOGLE_MAPS_KEY ? 'Google Maps Satellite' : 'Not configured'}
           </span>
         </div>
         <p className="muted" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>

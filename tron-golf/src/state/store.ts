@@ -70,6 +70,10 @@ export function addCourse(c: Omit<Course, 'id'>): Course {
   return course;
 }
 
+export function deleteCourse(id: string) {
+  commit({ ...state, courses: state.courses.filter((c) => c.id !== id) });
+}
+
 /* --- rounds ------------------------------------------------------------- */
 
 export function startRound(courseId: string, tee: string, handicapOn = false): Round | null {

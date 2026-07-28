@@ -1,4 +1,4 @@
-/* Map chrome only — the imagery itself is never filtered or stylised. */
+/* Map chrome — imagery itself is never filtered or stylised. */
 
 .sat-map {
   width: 100%;
@@ -7,85 +7,20 @@
   z-index: 0;
 }
 
-.leaflet-container {
-  font-family: var(--font-mono);
-  background: var(--panel-sunk);
-}
-
-.leaflet-control-attribution {
-  background: rgba(5, 10, 18, 0.78) !important;
-  color: var(--text-dim) !important;
-  font-family: var(--font-mono) !important;
-  font-size: 9px !important;
-  border-top: 1px solid var(--cyan-faint);
-  border-left: 1px solid var(--cyan-faint);
-}
-.leaflet-control-attribution a {
-  color: var(--cyan-dim) !important;
-}
-
-/* --- markers ------------------------------------------------------------ */
-.pin {
-  width: 18px;
-  height: 18px;
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-.pin span {
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
+/* Shown when VITE_GOOGLE_MAPS_KEY is not set */
+.sat-map--nokey {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-pixel);
-  font-size: 7px;
-  color: var(--text);
-  background: rgba(5, 10, 18, 0.8);
-  border: 1px solid var(--cyan-faint);
-  padding: 2px 3px;
-  white-space: nowrap;
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px;
+  line-height: 1.6;
 }
 
-.pin--tee {
-  background: var(--cyan);
-  border: 2px solid #041018;
-  box-shadow: 0 0 8px var(--cyan-glow);
-}
-.pin--green {
-  background: var(--green);
-  border: 2px solid #041018;
-  width: 12px;
-  height: 12px;
-}
-.pin--hazard {
-  background: var(--red);
-  border: 2px solid #041018;
-  width: 12px;
-  height: 12px;
-}
-.pin--player {
-  background: #ffffff;
-  border: 3px solid var(--cyan);
-  border-radius: 50%;
-  box-shadow: 0 0 12px var(--cyan);
-}
-.pin--target {
-  background: var(--amber);
-  border: 2px solid #1a0f00;
-  box-shadow: 0 0 12px var(--amber-glow);
-  cursor: grab;
-}
-.pin--target::before,
-.pin--target::after {
-  content: '';
-  position: absolute;
-  background: var(--amber);
-}
-.pin--target::before {
-  width: 34px;
-  height: 1px;
-}
-.pin--target::after {
-  width: 1px;
-  height: 34px;
+/* Google Maps attribution strip overrides */
+.gm-style .gm-style-cc {
+  background: rgba(5, 10, 18, 0.78) !important;
 }

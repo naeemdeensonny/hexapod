@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Screen from '../components/Screen';
 import { Button, KV, Panel } from '../components/ui';
-import SatelliteMap from '../map/SatelliteMap';
+import GoogleMap from '../map/GoogleMap';
 import { previewTileUrl } from '../map/provider';
 import { fmtDist } from '../state/geo';
-import { useStore } from '../state/store';
+import { deleteCourse, useStore } from '../state/store';
 import type { Course } from '../state/types';
 
 function totalMetres(c: Course, tee: string): number {
@@ -26,13 +26,19 @@ export default function Courses() {
   const { courses, settings } = useStore();
   const [selected, setSelected] = useState<Course | null>(null);
 
-  // Mobile layout: a list, then a stacked detail sheet for the chosen course.
   if (selected) {
     const tee = selected.tees.includes(settings.defaultTee) ? settings.defaultTee : selected.tees[0];
+
+    function handleDelete() {
+      if (!confirm(`Delete "${selected!.name}"? This cannot be undone.`)) return;
+      deleteCourse(selected!.id);
+      setSelected(null);
+    }
+
     return (
       <Screen title="COURSE" subtitle={`${selected.holeCount} holes`} back="/courses">
         <div style={{ height: 160, border: '1px solid var(--cyan-dim)' }}>
-          <SatelliteMap centre={selected.centre} zoom={15} />
+          <GoogleMap centre={selected.centre} zoom={15} />
         </div>
 
         <Panel title={selected.name.toUpperCase()}>
@@ -43,10 +49,9 @@ export default function Courses() {
           <KV k="LAST PLAYED" v={fmtDate(selected.lastPlayed)} />
         </Panel>
 
-        <p className="muted">{selected.description}</p>
         {selected.approximateCoords && (
           <p className="muted" style={{ color: 'var(--text-faint)', fontSize: 11 }}>
-            Hole reference points are approximate and can be re-pinned per hole.
+            Hole reference points are approximate.
           </p>
         )}
 
@@ -56,6 +61,9 @@ export default function Courses() {
           </Button>
           <Button variant="ghost" onClick={() => setSelected(null)}>
             BACK TO LIST
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDelete}>
+            DELETE COURSE
           </Button>
         </div>
       </Screen>

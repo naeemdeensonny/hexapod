@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Optional Mapbox token; when absent the app falls back to Esri imagery. */
-  readonly VITE_MAPBOX_TOKEN?: string;
+  /** Google Maps JavaScript API key. Set in .env.local and rebuild. */
+  readonly VITE_GOOGLE_MAPS_KEY?: string;
 }
 
 interface ImportMeta {
