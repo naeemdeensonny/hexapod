@@ -5,8 +5,8 @@ import ReactDOM from 'react-dom/client';
 // Inject fixed values for the status bar and gesture nav bar.
 const _cap = (window as any).Capacitor;
 if (_cap?.isNativePlatform?.() && _cap?.getPlatform?.() === 'android') {
-  document.documentElement.style.setProperty('--safe-top', '28px');
-  document.documentElement.style.setProperty('--safe-bottom', '20px');
+  document.documentElement.style.setProperty('--safe-top', '30px');
+  document.documentElement.style.setProperty('--safe-bottom', '48px');
 }
 // Latin subsets only — fonts are bundled locally so the app works offline.
 import '@fontsource/press-start-2p/latin.css';
