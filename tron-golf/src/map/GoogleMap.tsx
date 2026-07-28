@@ -59,9 +59,22 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
 
       mapRef.current = map;
       readyRef.current?.(map);
+
+      // Recalculate tile coverage after layout paints, and again on any
+      // window resize (including browser zoom changes).
+      const triggerResize = () => google.maps.event.trigger(map, 'resize');
+      requestAnimationFrame(triggerResize);
+      window.addEventListener('resize', triggerResize);
+      (el.current as HTMLDivElement & { _resizeCleanup?: () => void })._resizeCleanup =
+        () => window.removeEventListener('resize', triggerResize);
     });
     // Don't clear mapRef in cleanup — prevents StrictMode double-init on the same div.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => () => {
+    const div = el.current as (HTMLDivElement & { _resizeCleanup?: () => void }) | null;
+    div?._resizeCleanup?.();
   }, []);
 
   if (!GOOGLE_MAPS_KEY) {
@@ -117,10 +130,10 @@ export function paddedBounds(
 
 /* --- marker icons --------------------------------------------------------- */
 
-function svgIcon(svg: string, w: number, h: number): google.maps.Icon {
+function svgIcon(svg: string, w: number, h: number, anchorX?: number, anchorY?: number): google.maps.Icon {
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
-    anchor: new google.maps.Point(w / 2, h / 2),
+    anchor: new google.maps.Point(anchorX ?? w / 2, anchorY ?? h / 2),
     scaledSize: new google.maps.Size(w, h),
   };
 }
@@ -131,7 +144,7 @@ function svgIcon(svg: string, w: number, h: number): google.maps.Icon {
  * that depend on `map` being non-null).
  */
 export function markerIcon(
-  kind: 'tee' | 'green' | 'target' | 'player' | 'hazard',
+  kind: 'tee' | 'flag' | 'target' | 'player' | 'hazard',
   label = '',
 ): google.maps.Icon {
   switch (kind) {
@@ -143,13 +156,14 @@ export function markerIcon(
           `</svg>`,
         22, 22,
       );
-    case 'green':
+    case 'flag':
       return svgIcon(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">` +
-          `<circle cx="9" cy="9" r="7" fill="#00ff88" stroke="#041018" stroke-width="2"/>` +
-          (label ? `<text x="9" y="13" font-family="monospace" font-size="7" font-weight="bold" fill="#041018" text-anchor="middle">${label}</text>` : '') +
+        `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="28">` +
+          `<line x1="7" y1="3" x2="7" y2="26" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>` +
+          `<polygon points="7,3 17,7 7,14" fill="#ffe000"/>` +
+          `<circle cx="7" cy="26" r="2" fill="rgba(255,255,255,0.5)"/>` +
           `</svg>`,
-        18, 18,
+        18, 28, 7, 26,
       );
     case 'hazard':
       return svgIcon(
@@ -161,12 +175,10 @@ export function markerIcon(
       );
     case 'target':
       return svgIcon(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">` +
-          `<line x1="0" y1="18" x2="36" y2="18" stroke="#ffb02e" stroke-width="1.5" stroke-opacity="0.8"/>` +
-          `<line x1="18" y1="0" x2="18" y2="36" stroke="#ffb02e" stroke-width="1.5" stroke-opacity="0.8"/>` +
-          `<circle cx="18" cy="18" r="9" fill="#ffb02e" stroke="#1a0f00" stroke-width="2"/>` +
+        `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="18">` +
+          `<ellipse cx="13" cy="9" rx="11" ry="7" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>` +
           `</svg>`,
-        36, 36,
+        26, 18,
       );
     case 'player':
     default:

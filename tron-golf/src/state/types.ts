@@ -14,6 +14,8 @@ export type Hole = {
   greenCentre?: LatLng;
   greenBack?: LatLng;
   hazards?: { name: string; point: LatLng }[];
+  coordsSet?: boolean;
+  fence?: { north: number; south: number; east: number; west: number };
 };
 
 export type Course = {

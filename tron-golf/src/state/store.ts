@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { seedCourses } from './seed';
-import type { AppState, Course, Fairway, HoleScore, Round, Settings } from './types';
+import type { AppState, Course, Fairway, Hole, HoleScore, Round, Settings } from './types';
 
 const KEY = 'tron-golf:v1';
 
@@ -72,6 +72,20 @@ export function addCourse(c: Omit<Course, 'id'>): Course {
 
 export function deleteCourse(id: string) {
   commit({ ...state, courses: state.courses.filter((c) => c.id !== id) });
+}
+
+export function updateCourse(id: string, patch: Partial<Omit<Course, 'id'>>) {
+  const courses = state.courses.map((c) => (c.id === id ? { ...c, ...patch } : c));
+  commit({ ...state, courses });
+}
+
+export function updateHole(courseId: string, holeNumber: number, patch: Partial<Hole>) {
+  const courses = state.courses.map((c) => {
+    if (c.id !== courseId) return c;
+    const holes = c.holes.map((h) => (h.number === holeNumber ? { ...h, ...patch } : h));
+    return { ...c, holes, approximateCoords: !holes.every((h) => h.coordsSet) };
+  });
+  commit({ ...state, courses });
 }
 
 /* --- rounds ------------------------------------------------------------- */

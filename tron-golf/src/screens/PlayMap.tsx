@@ -89,16 +89,14 @@ export default function PlayMap() {
     staticMarkers.current.forEach((m) => m.setMap(null));
     staticMarkers.current = [];
 
-    const add = (pos: LatLng, kind: 'tee' | 'green' | 'hazard', label: string, title: string) => {
+    const add = (pos: LatLng, kind: 'tee' | 'flag' | 'hazard', label: string, title: string) => {
       staticMarkers.current.push(
         new google.maps.Marker({ position: pos, map, icon: markerIcon(kind, label), title, zIndex: 10 }),
       );
     };
 
     if (hole.tee) add(hole.tee, 'tee', 'T', 'Tee');
-    if (hole.greenFront) add(hole.greenFront, 'green', 'F', 'Front');
-    if (hole.greenCentre) add(hole.greenCentre, 'green', 'C', 'Centre');
-    if (hole.greenBack) add(hole.greenBack, 'green', 'B', 'Back');
+    if (hole.greenCentre) add(hole.greenCentre, 'flag', '', 'Green');
     for (const h of hole.hazards ?? []) add(h.point, 'hazard', h.name[0] ?? 'H', h.name);
 
     applyFence(map, player);
@@ -183,14 +181,8 @@ export default function PlayMap() {
         legA.current = new google.maps.Polyline({
           path,
           map,
-          strokeColor: '#ffb02e',
-          strokeWeight: 2,
-          strokeOpacity: 0,
-          icons: [{
-            icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: '#ffb02e', scale: 4 },
-            offset: '0',
-            repeat: '12px',
-          }],
+          strokeColor: 'rgba(255,255,255,0.75)',
+          strokeWeight: 1.5,
         });
       }
     }
@@ -206,8 +198,8 @@ export default function PlayMap() {
         legB.current = new google.maps.Polyline({
           path,
           map,
-          strokeColor: '#35e0ff',
-          strokeWeight: 2,
+          strokeColor: 'rgba(255,255,255,0.75)',
+          strokeWeight: 1.5,
         });
       }
     }

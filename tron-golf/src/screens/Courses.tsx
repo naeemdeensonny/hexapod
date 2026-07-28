@@ -59,6 +59,9 @@ export default function Courses() {
           <Button variant="primary" onClick={() => nav(`/setup/${selected.id}`)}>
             SELECT COURSE
           </Button>
+          <Button onClick={() => nav(`/courses/edit/${selected.id}`)}>
+            EDIT COURSE
+          </Button>
           <Button variant="ghost" onClick={() => setSelected(null)}>
             BACK TO LIST
           </Button>

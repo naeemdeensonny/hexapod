@@ -3,6 +3,8 @@ import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-d
 import Menu from './screens/Menu';
 import Courses from './screens/Courses';
 import AddCourse from './screens/AddCourse';
+import EditCourse from './screens/EditCourse';
+import HoleEditor from './screens/HoleEditor';
 import RoundSetup from './screens/RoundSetup';
 import HoleSelect from './screens/HoleSelect';
 import PlayMap from './screens/PlayMap';
@@ -97,6 +99,8 @@ function Shell() {
         <Route path="/" element={<Menu />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/add" element={<AddCourse />} />
+        <Route path="/courses/edit/:courseId" element={<EditCourse />} />
+        <Route path="/courses/edit/:courseId/hole/:holeNo" element={<HoleEditor />} />
         <Route path="/setup/:courseId" element={<RoundSetup />} />
         <Route path="/hole" element={<HoleSelect />} />
         <Route path="/play" element={<PlayMap />} />
