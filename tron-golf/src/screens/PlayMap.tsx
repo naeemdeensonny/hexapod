@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Screen from '../components/Screen';
 import { Button } from '../components/ui';
 import GoogleMap, { markerIcon, paddedBounds } from '../map/GoogleMap';
-import { distanceM, fmtDist } from '../state/geo';
+import { bearing, distanceM, fmtDist } from '../state/geo';
 import { courseById, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
 
@@ -101,7 +101,8 @@ export default function PlayMap() {
 
     applyFence(map, player);
 
-    // Frame tee and green.
+    // Rotate to face the hole (tee at bottom, green at top) then frame both pins.
+    if (hole.tee && hole.greenCentre) map.setHeading(bearing(hole.tee, hole.greenCentre));
     const bounds = new google.maps.LatLngBounds();
     if (hole.tee) bounds.extend({ lat: hole.tee.lat, lng: hole.tee.lng });
     if (hole.greenCentre) bounds.extend({ lat: hole.greenCentre.lat, lng: hole.greenCentre.lng });
