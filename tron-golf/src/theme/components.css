@@ -34,12 +34,12 @@
 
 /* --- header ------------------------------------------------------------- */
 .hdr {
-  height: var(--header-h);
-  flex: 0 0 var(--header-h);
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  flex: 0 0 calc(var(--header-h) + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 0 var(--sp-3);
+  padding: env(safe-area-inset-top, 0px) var(--sp-3) 0;
   border-bottom: var(--bw) solid var(--cyan-dim);
   background: linear-gradient(180deg, var(--panel-hi), var(--panel));
   box-shadow: 0 1px 0 var(--cyan-glow);
@@ -180,8 +180,9 @@
 
 /* --- bottom navigation -------------------------------------------------- */
 .nav {
-  height: var(--nav-h);
-  flex: 0 0 var(--nav-h);
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  flex: 0 0 calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   display: flex;
   border-top: var(--bw) solid var(--cyan-dim);
   background: var(--panel);
