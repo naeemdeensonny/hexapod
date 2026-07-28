@@ -101,12 +101,16 @@ export default function PlayMap() {
 
     applyFence(map, player);
 
-    // Rotate to face the hole (tee at bottom, green at top) then frame both pins.
-    if (hole.tee && hole.greenCentre) map.setHeading(bearing(hole.tee, hole.greenCentre));
+    // Frame both pins, then rotate once the map is idle.
+    // fitBounds resets heading to north, so heading must be applied after it settles.
+    const h = (hole.tee && hole.greenCentre) ? bearing(hole.tee, hole.greenCentre) : null;
     const bounds = new google.maps.LatLngBounds();
     if (hole.tee) bounds.extend({ lat: hole.tee.lat, lng: hole.tee.lng });
     if (hole.greenCentre) bounds.extend({ lat: hole.greenCentre.lat, lng: hole.greenCentre.lng });
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
+    if (h !== null) {
+      google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(h));
+    }
 
     return () => {
       staticMarkers.current.forEach((m) => m.setMap(null));
