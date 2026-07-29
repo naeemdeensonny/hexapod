@@ -172,6 +172,27 @@ const cases = [
     expect: (r) => !r.crashed && r.playMapHeight > 100,
     detail: 'the screen used on the course is unaffected by the hardening',
   },
+  {
+    // Guards the upgrade path: if the new APK misbehaves and the old one is
+    // reinstalled, the old loader must still find the course. It reads
+    // `parsed.courses` at the top level, so the version metadata has to sit
+    // alongside the state, never wrapping it.
+    name: 'a rollback to the OLD build can still read the data',
+    seed: { [KEY]: JSON.stringify(legacyBare) },
+    route: '#/courses',
+    expect: (r) => r.oldBuildWouldSee.includes('Kinrara'),
+    detail: 'downgrade-safe: old build finds courses in what the new build wrote',
+  },
+  {
+    // The everyday cycle: the app writes on every change, then the user closes
+    // and reopens it. Proves the new build can read back its own output.
+    name: 'survives a restart after the app has written its own format',
+    seed: { [KEY]: JSON.stringify(legacyBare) },
+    route: '#/courses',
+    reload: true,
+    expect: (r) => r.courseNames.includes('Kinrara') && r.envelopeVersion === 2,
+    detail: 'write -> restart -> read round-trips cleanly',
+  },
 ];
 
 /* --- runner --------------------------------------------------------------- */
@@ -201,6 +222,12 @@ for (const c of cases) {
   await page.goto(BASE + c.route, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(900);
 
+  if (c.reload) {
+    // Second launch reads whatever the first one persisted.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(900);
+  }
+
   const r = await page.evaluate(() => {
     const text = document.body.innerText || '';
     const playMap = document.querySelector('.play__map');
@@ -221,6 +248,17 @@ for (const c of cases) {
       })(),
       playMapHeight: playMap ? Math.round(playMap.getBoundingClientRect().height) : 0,
       envelopeVersion,
+      // Replays the PRE-HARDENING loader verbatim against whatever the new
+      // build has now written, to prove a downgrade would not wipe the course.
+      oldBuildWouldSee: (() => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem('tron-golf:v1') ?? 'null');
+          const courses = parsed?.courses?.length ? parsed.courses : [];
+          return courses.map((c) => c?.name).filter(Boolean);
+        } catch {
+          return [];
+        }
+      })(),
     };
   });
 

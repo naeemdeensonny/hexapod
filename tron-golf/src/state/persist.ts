@@ -30,7 +30,19 @@ const SAFE_KEY = 'tron-golf:v1:safe';
  */
 const SCHEMA_VERSION = 2;
 
-type Envelope = { schemaVersion: number; savedAt: string; state: unknown };
+/**
+ * Version metadata sits *alongside* the state fields rather than wrapping them:
+ *
+ *     { schemaVersion, savedAt, courses, rounds, activeRound, settings }
+ *
+ * This is deliberate. A nested `{ schemaVersion, state: {...} }` shape would be
+ * unreadable by the pre-hardening build, which looks for `courses` at the top
+ * level — so rolling back to an older APK would find no courses, fall through
+ * to seed data, and overwrite a hand-placed course. Keeping the state flat
+ * means old and new builds can both read the record, and a downgrade is
+ * survivable.
+ */
+type Envelope = AppState & { schemaVersion: number; savedAt: string };
 
 /**
  * Shape migrations, applied in order from the stored version up to current.
@@ -128,11 +140,16 @@ function decode(raw: string): unknown | null {
   }
   if (typeof parsed !== 'object' || parsed === null) return null;
 
-  const env = parsed as Partial<Envelope>;
-  const isEnvelope = typeof env.schemaVersion === 'number' && 'state' in env;
+  const env = parsed as Partial<Envelope> & { state?: unknown };
 
-  let version = isEnvelope ? (env.schemaVersion as number) : 1;
-  let state: unknown = isEnvelope ? env.state : parsed;
+  // Three layouts must be readable:
+  //   1. legacy bare  — no schemaVersion, state fields at top level
+  //   2. flat         — schemaVersion alongside the state fields (current)
+  //   3. nested       — schemaVersion with the state under `state`
+  // Only the version number differs between 1 and 2; 3 needs unwrapping.
+  let version = typeof env.schemaVersion === 'number' ? env.schemaVersion : 1;
+  let state: unknown =
+    env.state && typeof env.state === 'object' ? env.state : parsed;
 
   // Data written by a NEWER build than this one: don't guess at its shape,
   // hand it to the parser as-is and let field-level repair do what it can.
@@ -226,14 +243,13 @@ export function loadState(): AppState | null {
   return null;
 }
 
+function envelope(state: AppState): Envelope {
+  return { schemaVersion: SCHEMA_VERSION, savedAt: new Date().toISOString(), ...state };
+}
+
 /** Persist state. Returns an error message on failure, or null on success. */
 export function saveState(state: AppState): string | null {
-  const envelope: Envelope = {
-    schemaVersion: SCHEMA_VERSION,
-    savedAt: new Date().toISOString(),
-    state,
-  };
-  const err = writeRaw(KEY, JSON.stringify(envelope));
+  const err = writeRaw(KEY, JSON.stringify(envelope(state)));
   if (err) setStatus({ lastError: err });
   else noteWriteOk();
   return err;
@@ -244,12 +260,7 @@ export function saveState(state: AppState): string | null {
  * must never block the app, since the primary record is what matters.
  */
 function snapshot(state: AppState): void {
-  const envelope: Envelope = {
-    schemaVersion: SCHEMA_VERSION,
-    savedAt: new Date().toISOString(),
-    state,
-  };
-  writeRaw(SAFE_KEY, JSON.stringify(envelope));
+  writeRaw(SAFE_KEY, JSON.stringify(envelope(state)));
 }
 
 /**
