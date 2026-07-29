@@ -1,6 +1,6 @@
 # TRON Golf — Handoff Memo
 
-**Date:** 2026-07-29
+**Date:** 2026-07-29 (updated same day, second session)
 **Repo:** `naeemdeensonny/hexapod`, subfolder `tron-golf/`
 **Branch:** `claude/tron-golf-v1-ui-xnoqs6`
 **Head at handoff:** `b2ee9d3`
@@ -251,8 +251,18 @@ npm run build
 npx @capacitor/cli sync
 ```
 
-Then Android Studio → **Build → Clean Project** → **Build → Build APK(s)**.
-Output: `android\app\build\outputs\apk\debug\app-debug.apk`.
+**Preferred: command-line build (now working, bypasses Gradle cache):**
+
+```
+cd C:\Users\Naeem Deen\tron-golf-tmp\tron-golf\android
+set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+set PATH=%JAVA_HOME%\bin;%PATH%
+.\gradlew clean assembleDebug
+```
+
+Output: `app\build\outputs\apk\debug\app-debug.apk`. Build time ~24s.
+
+**Fallback: Android Studio GUI** → Close Android Studio first (Gradle daemon conflict) → Build → Clean Project → Build APK(s). GUI also works but was previously serving cached output — always do `Clean Project` first.
 
 ### Environment traps hit during this session — all real, all will recur
 
@@ -262,7 +272,7 @@ Output: `android\app\build\outputs\apk\debug\app-debug.apk`.
 | Must be run from `tron-golf/` | Running from `tron-golf/android/` gives "needs to run at the root of an npm package". |
 | `capacitor.config.ts` not read on Windows | Capacitor looked for `./www` instead of `dist`. Fixed by adding a plain **`capacitor.config.json`** next to the `.ts` one. Both exist now; the JSON is the one being honoured. |
 | `.env.local` is gitignored | Never arrives via `git pull`. Must exist locally with `VITE_GOOGLE_MAPS_KEY=…` or the map renders a "Map key not set" placeholder. |
-| **System Java is 1.8** | `.\gradlew` from the command line **fails** — AGP 8.13 needs JVM 11+. Only Android Studio's bundled JDK works. **Installing JDK 17 and setting `JAVA_HOME` would unblock command-line builds and is the single highest-value environment fix** — it removes the GUI build cache from the loop entirely. |
+| **System Java is 1.8 — NOW FIXED** | Was `1.8.0_421`. Oracle Java 8 was in System PATH (`C:\Program Files (x86)\Common Files\Oracle\Java\java8path`) and overrode JDK 17. Removed that entry. **JDK 21 required** — Capacitor 8 sets `sourceCompatibility = JavaVersion.VERSION_21`, so JDK 17 fails with `invalid source release: 21`. JDK 21.0.11.10 (Adoptium Temurin) is now installed at `C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot`. User `JAVA_HOME` set to that path. Command-line Gradle builds now work. |
 | Play Protect blocks install | Tap the **"Install anyway"** *text link*, not the blue OK button (OK cancels). |
 | Installing over the old app | Does **not** clear WebView storage. Uninstall fully when testing a web-asset change. |
 
@@ -355,16 +365,21 @@ tron-golf/
 
 ## 8. Blunt summary for whoever picks this up
 
-The user is understandably frustrated: they have installed many APKs and seen
-the app change very little. The most probable explanation is not that the fixes
-are wrong — the hole-editor layout is verified correct in a browser at phone
-dimensions — but that **the code under test on the phone was never the code that
-was pushed**, due to two compounding causes: Android Studio's Gradle cache
-producing stale APKs, and a Workbox service worker pinning the WebView to an old
-build across reinstalls.
+The user was understandably frustrated: many APKs installed, app barely changed.
+Root cause: Android Studio's Gradle cache produced stale APKs, AND a Workbox
+service worker pinned the WebView to its first-ever cached build across
+reinstalls. Both have been fixed.
 
-Both have been addressed, and a build stamp now exists to prove freshness in one
-glance. **Read that stamp before writing a single line of CSS.** If it is fresh
-and the map is still collapsed, you have a genuine WebView layout bug and §2.1
-lists the ranked hypotheses; remote-debug per §5 rather than guessing, because
-guessing is what burned this session.
+**As of the end of session 2**, command-line Gradle builds now work (`BUILD
+SUCCESSFUL in 24s`, 97 tasks executed). A fresh APK was just produced. The user
+is about to install it.
+
+**Critical install procedure:**
+1. **UNINSTALL** the old app first (long-press → Uninstall). Do NOT install over.
+2. Install the new `app-debug.apk`.
+3. Open app → check footer: `V1 · OFFLINE-FIRST · BUILD 07-29 HH:MM`.
+4. If footer is fresh, test the hole editor map.
+
+**Read that stamp before writing a single line of CSS.** If the build IS fresh
+and the map is still collapsed, you have a genuine WebView layout bug — follow
+§2.1 and remote-debug per §5 rather than guessing.
