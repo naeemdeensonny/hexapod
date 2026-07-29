@@ -82,7 +82,7 @@ export default function Menu() {
       </div>
 
       <p className="muted center" style={{ fontSize: 11, marginTop: 'auto' }}>
-        V1 · OFFLINE-FIRST · SATELLITE MAP
+        V1 · OFFLINE-FIRST · BUILD {__BUILD_ID__}
       </p>
     </Screen>
   );

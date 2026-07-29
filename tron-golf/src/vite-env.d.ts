@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
 
 interface ImportMetaEnv {
   /** Google Maps JavaScript API key. Set in .env.local and rebuild. */
@@ -8,3 +9,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Build timestamp (`MM-DD HH:MM`, UTC), injected by Vite. */
+declare const __BUILD_ID__: string;

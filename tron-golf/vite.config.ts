@@ -7,6 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration is done by hand in main.tsx: inside the Capacitor WebView a
+      // service worker would cache the app in storage that survives installing a
+      // new APK, permanently pinning the native app to an old build.
+      injectRegister: null,
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
       },
@@ -27,6 +31,12 @@ export default defineConfig({
       },
     }),
   ],
+  // Stamped into the menu footer so a stale build is obvious at a glance.
+  define: {
+    __BUILD_ID__: JSON.stringify(
+      new Date().toISOString().slice(5, 16).replace('T', ' '),
+    ),
+  },
   base: './',
   server: { port: 5173 },
 });
