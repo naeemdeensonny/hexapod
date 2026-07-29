@@ -209,15 +209,36 @@ startup. **Phone must be FULLY UNINSTALLED once to clear old cache.**
 - Bottom panel stripped to RE-CENTRE + SCORE only
 - RE-CENTRE re-applies heading after `fitBounds` resets to north
 
-### 4.4 Map rotation
+### 4.4 Map rotation — needs a Cloud Console step to work at all
 
-Heading = `bearing(tee, greenCentre)`, applied in the `idle` callback after
-`fitBounds` (because `fitBounds` resets heading to north):
+**The rotation never worked in any build, on any device.** Not a stale-code
+problem: `setHeading()` was called correctly everywhere, but the map was built
+**without a Map ID**, so the API rendered a **raster** map. On raster maps
+heading is only honoured at 45° imagery zoom levels — at the top-down satellite
+view this app uses, `setHeading()` is a silent no-op. No warning, no error.
 
-```ts
-if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
-if (h !== null) google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(h));
+Rotation requires a **vector** map. Fixed in `eafa3a5`: `GoogleMap.tsx` now
+passes `mapId` when `VITE_GOOGLE_MAPS_ID` is set, and all heading changes go
+through `faceHeading()` (sets heading immediately *and* once more on `idle`,
+because `fitBounds` is async and snaps back to north, yet never fires `idle`
+when it changes nothing).
+
+**Remaining manual step — the code cannot do this:**
+
+Google Cloud Console → Google Maps Platform → **Map Management** → Create Map ID
+- Map type: **JavaScript**
+- Rendering: **Vector** (not Raster)
+- Tick **Tilt** and **Rotation**
+
+Then add to `.env.local` and rebuild:
 ```
+VITE_GOOGLE_MAPS_ID=<the map id>
+```
+
+Degrades cleanly — with no Map ID the app runs exactly as before, north-up.
+
+Heading itself is `bearing(tee, greenCentre)`, recomputed whenever the hole
+changes.
 
 ---
 
