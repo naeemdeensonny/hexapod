@@ -186,42 +186,80 @@
   }
 }
 
-/* --- overflow-aware scrolling text --------------------------------------- */
+/* --- overflow-aware scrolling text ---------------------------------------
+   Text that does not fit scrolls continuously right-to-left. Two identical
+   copies sit side by side and the track slides exactly one copy-width, so the
+   loop is seamless — no bounce, no visible reset. Text that fits does not
+   animate at all. Speed is fixed in JS, so every label moves at one pace. */
 .marquee {
   display: block;
   overflow: hidden;
-  white-space: nowrap;
   min-width: 0;
-}
-.marquee__inner {
-  display: inline-block;
   white-space: nowrap;
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
   will-change: transform;
 }
-/* Only the measured-overflow case animates; everything else is plain text. */
-.marquee--on .marquee__inner {
-  animation: marquee-scan var(--marquee-dur, 10s) ease-in-out infinite;
+.marquee--on .marquee__track {
+  animation-name: marquee-loop;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
-@keyframes marquee-scan {
-  0%,
-  14% {
-    transform: translateX(0);
-  }
-  50%,
-  64% {
-    transform: translateX(var(--marquee-shift, 0));
-  }
-  100% {
-    transform: translateX(0);
+.marquee__copy {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+.marquee__item {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.marquee__gap {
+  flex: 0 0 48px; /* keep in step with MARQUEE_GAP in ui.tsx */
+}
+/* The track holds exactly two copies, so -50% is one full copy-width. */
+@keyframes marquee-loop {
+  to {
+    transform: translateX(-50%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .marquee--on .marquee__inner {
+  .marquee--on .marquee__track {
     animation: none;
   }
-  .marquee {
+  .marquee__item {
+    overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+/* --- history row: delete target stays on a fixed right edge --------------- */
+.hist-row {
+  display: flex;
+  align-items: stretch;
+}
+/* `min-width: 0` is what stops a long, non-wrapping course name from forcing
+   the row wider than the screen and shoving the delete button out of view. */
+.hist-row > .card {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hist-del {
+  flex: 0 0 var(--tap);
+  width: var(--tap);
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--red);
+  border-left: 0;
+  color: var(--red);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 0;
+}
+.hist-del.btn--armed {
+  background: var(--red);
+  color: #180205;
 }
 
 .btn-row {

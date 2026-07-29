@@ -41,12 +41,8 @@ export default function History() {
         {rounds.map((r) => {
           const t = roundTotals(r, courseById(r.courseId));
           return (
-            <div key={r.id} style={{ display: 'flex', gap: 0 }}>
-              <button
-                className="card"
-                style={{ flex: 1 }}
-                onClick={() => nav(`/history/${r.id}`)}
-              >
+            <div key={r.id} className="hist-row">
+              <button className="card" onClick={() => nav(`/history/${r.id}`)}>
                 <span className="card__main">
                   <MarqueeText className="card__name" text={r.courseName} />
                   <span className="card__meta">
@@ -67,24 +63,14 @@ export default function History() {
                 <span className="card__arrow">{'>'}</span>
               </button>
 
+              {/* Fixed width in both states so the right edge of every row
+                  lines up, however long the course name is. */}
               <button
                 onClick={(e) => handleDelete(e, r.id)}
-                className={armed === r.id ? 'btn--armed' : ''}
-                style={{
-                  flexShrink: 0,
-                  width: armed === r.id ? 92 : 44,
-                  background: armed === r.id ? 'var(--red)' : 'var(--panel-sunk)',
-                  border: '1px solid var(--red)',
-                  borderLeft: 'none',
-                  color: armed === r.id ? '#180205' : 'var(--red)',
-                  fontFamily: 'var(--font-pixel)',
-                  fontSize: armed === r.id ? 7 : 10,
-                  cursor: 'pointer',
-                  transition: 'width 0.12s ease',
-                }}
+                className={`hist-del ${armed === r.id ? 'btn--armed' : ''}`}
                 aria-label={armed === r.id ? 'Confirm delete round' : 'Delete round'}
               >
-                {armed === r.id ? 'SURE?' : '✕'}
+                {armed === r.id ? '✓' : '✕'}
               </button>
             </div>
           );

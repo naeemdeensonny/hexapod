@@ -76,55 +76,74 @@ export function ConfirmButton({
 
 /* --- overflowing text ----------------------------------------------------- */
 
+/** Pixels per second for scrolling text. One speed for the whole app. */
+const MARQUEE_SPEED = 38;
+/** Blank run between the end of the text and the start of its repeat, in px. */
+const MARQUEE_GAP = 48;
+
 /**
- * Single-line text that gently scrolls back and forth when it is too long for
- * its container, and sits still when it fits.
+ * Single-line text that scrolls continuously right-to-left when it is too long
+ * for its container, and sits perfectly still when it fits.
  *
- * Course names like "Awana Genting Highlands Golf & Country Resort" would
- * otherwise either wrap onto three lines or be cut off mid-word. Measuring
- * first means short names pay nothing — no animation, no motion.
+ * The text is rendered twice; the track slides exactly one copy-width and
+ * loops, so the scroll is seamless rather than a bounce or a jump-back.
+ *
+ * Duration is derived from content width at a FIXED speed, so every scrolling
+ * label in the app moves at the same pace — a long course name is not "faster"
+ * than a short one, and identical names (the common case in a round list)
+ * measure identically and therefore stay in step with each other.
  */
 export function MarqueeText({ text, className = '' }: { text: string; className?: string }) {
   const outer = useRef<HTMLSpanElement | null>(null);
-  const inner = useRef<HTMLSpanElement | null>(null);
-  const [shift, setShift] = useState(0);
+  const probe = useRef<HTMLSpanElement | null>(null);
+  const [duration, setDuration] = useState(0); // 0 = fits, render static
 
   useLayoutEffect(() => {
     const o = outer.current;
-    const i = inner.current;
-    if (!o || !i) return;
+    const p = probe.current;
+    if (!o || !p) return;
 
     const measure = () => {
-      const overflow = i.scrollWidth - o.clientWidth;
-      setShift(overflow > 4 ? overflow : 0);
+      // `probe` is the first copy and carries no gap, so this is the true
+      // width of the text regardless of whether we are currently animating.
+      const textWidth = p.scrollWidth;
+      if (textWidth <= o.clientWidth + 2) {
+        setDuration(0);
+        return;
+      }
+      // Rounded so two identical strings always land on the same duration and
+      // therefore stay in phase.
+      const travel = textWidth + MARQUEE_GAP;
+      setDuration(Math.round((travel / MARQUEE_SPEED) * 10) / 10);
     };
-    measure();
 
-    // Re-measure on rotation / layout changes; the element is often inside a
-    // flex row whose width settles after first paint.
+    measure();
+    // Width settles after first paint inside flex rows, and changes on rotate.
     const ro = new ResizeObserver(measure);
     ro.observe(o);
     return () => ro.disconnect();
   }, [text]);
 
-  // Roughly constant scroll speed regardless of how much overflows.
-  const duration = shift ? Math.max(6, Math.round(shift / 18) + 5) : 0;
+  const on = duration > 0;
 
   return (
-    <span ref={outer} className={`marquee ${shift ? 'marquee--on' : ''} ${className}`} title={text}>
+    <span ref={outer} className={`marquee ${on ? 'marquee--on' : ''} ${className}`} title={text}>
       <span
-        ref={inner}
-        className="marquee__inner"
-        style={
-          shift
-            ? ({
-                '--marquee-shift': `-${shift}px`,
-                '--marquee-dur': `${duration}s`,
-              } as React.CSSProperties)
-            : undefined
-        }
+        className="marquee__track"
+        style={on ? { animationDuration: `${duration}s` } : undefined}
       >
-        {text}
+        <span className="marquee__copy">
+          <span ref={probe} className="marquee__item">
+            {text}
+          </span>
+          {on && <span className="marquee__gap" aria-hidden="true" />}
+        </span>
+        {on && (
+          <span className="marquee__copy" aria-hidden="true">
+            <span className="marquee__item">{text}</span>
+            <span className="marquee__gap" />
+          </span>
+        )}
       </span>
     </span>
   );
