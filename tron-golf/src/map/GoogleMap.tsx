@@ -182,12 +182,61 @@ export function markerIcon(
       );
     case 'player':
     default:
-      return svgIcon(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">` +
-          `<circle cx="12" cy="12" r="11" fill="#35e0ff" fill-opacity="0.25"/>` +
-          `<circle cx="12" cy="12" r="7" fill="#ffffff" stroke="#35e0ff" stroke-width="3"/>` +
-          `</svg>`,
-        24, 24,
-      );
+      return svgIcon(GOLF_BALL_SVG, 22, 22);
   }
+}
+
+/* --- 8-bit golf ball ------------------------------------------------------ */
+
+/** Row spans of a blocky pixel circle: [xStart, width] per row. */
+const BALL_ROWS: [number, number][] = [
+  [3, 5], [2, 7], [1, 9], [1, 9], [0, 11], [0, 11],
+  [0, 11], [1, 9], [1, 9], [2, 7], [3, 5],
+];
+
+function pixelRows(rows: [number, number][], dx: number, dy: number, fill: string): string {
+  return rows
+    .map(([x, w], y) => `<rect x="${x + dx}" y="${y + dy}" width="${w}" height="1" fill="${fill}"/>`)
+    .join('');
+}
+
+/** Outline rows: the ball shape grown by one pixel on every side. */
+const BALL_OUTLINE_ROWS: [number, number][] = [
+  [4, 5], [3, 7], [2, 9], [1, 11], [1, 11], [0, 13],
+  [0, 13], [0, 13], [1, 11], [1, 11], [2, 9], [3, 7], [4, 5],
+];
+
+const GOLF_BALL_SVG =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13" shape-rendering="crispEdges">` +
+  pixelRows(BALL_OUTLINE_ROWS, 0, 0, '#04101a') +
+  pixelRows(BALL_ROWS, 1, 1, '#ffffff') +
+  // dimples
+  `<rect x="4" y="4" width="1" height="1" fill="#aebfcd"/>` +
+  `<rect x="7" y="5" width="1" height="1" fill="#aebfcd"/>` +
+  `<rect x="5" y="8" width="1" height="1" fill="#aebfcd"/>` +
+  `<rect x="8" y="8" width="1" height="1" fill="#aebfcd"/>` +
+  `</svg>`;
+
+/* --- on-map distance label ------------------------------------------------ */
+
+/**
+ * A Grint-style distance chip pinned to a point on the map. Rendered as a
+ * marker icon so it stays screen-upright while the map is rotated.
+ */
+export function distanceLabelIcon(text: string): google.maps.Icon {
+  const w = Math.max(32, text.length * 8 + 12);
+  const h = 19;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+    `<rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" rx="2" ` +
+    `fill="rgba(4,12,20,0.72)" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>` +
+    `<text x="${w / 2}" y="${h / 2 + 4}" font-family="monospace" font-size="12" ` +
+    `fill="#ffffff" text-anchor="middle">${text}</text>` +
+    `</svg>`;
+  return svgIcon(svg, w, h);
+}
+
+/** Midpoint of a short segment — a plain average is accurate enough at hole scale. */
+export function midpoint(a: LatLng, b: LatLng): LatLng {
+  return { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
 }

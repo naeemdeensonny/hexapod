@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Screen from '../components/Screen';
 import { Button } from '../components/ui';
-import GoogleMap, { markerIcon, paddedBounds } from '../map/GoogleMap';
+import GoogleMap, {
+  distanceLabelIcon,
+  markerIcon,
+  midpoint,
+  paddedBounds,
+} from '../map/GoogleMap';
 import { bearing, distanceM, fmtDist } from '../state/geo';
 import { courseById, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
@@ -21,11 +26,12 @@ export default function PlayMap() {
   const [target, setTarget] = useState<LatLng | null>(null);
   const [gpsError, setGpsError] = useState(false);
 
+  type Leg = { line: google.maps.Polyline; label: google.maps.Marker };
+
   const staticMarkers = useRef<google.maps.Marker[]>([]);
   const playerMarker = useRef<google.maps.Marker | null>(null);
   const targetMarker = useRef<google.maps.Marker | null>(null);
-  const legA = useRef<google.maps.Polyline | null>(null); // player → target
-  const legB = useRef<google.maps.Polyline | null>(null); // target → green
+  const legs = useRef<Map<string, Leg>>(new Map());
   const fenceRef = useRef<google.maps.LatLngBoundsLiteral | null>(null);
 
   const centre = hole?.tee ?? course?.centre ?? { lat: 0, lng: 0 };
@@ -155,83 +161,96 @@ export default function PlayMap() {
     [],
   );
 
-  /* --- player marker + aiming lines --------------------------------------- */
+  /* --- player marker ------------------------------------------------------- */
+  useEffect(() => {
+    if (!map || !player) return;
+    if (playerMarker.current) {
+      playerMarker.current.setPosition({ lat: player.lat, lng: player.lng });
+    } else {
+      playerMarker.current = new google.maps.Marker({
+        position: { lat: player.lat, lng: player.lng },
+        map,
+        icon: markerIcon('player'),
+        zIndex: 900,
+        title: 'You',
+      });
+    }
+  }, [map, player]);
+
+  /* --- aiming lines, each labelled with its own distance ------------------- */
   useEffect(() => {
     if (!map) return;
 
-    if (player) {
-      if (playerMarker.current) {
-        playerMarker.current.setPosition({ lat: player.lat, lng: player.lng });
-      } else {
-        playerMarker.current = new google.maps.Marker({
-          position: { lat: player.lat, lng: player.lng },
-          map,
-          icon: markerIcon('player'),
-          zIndex: 900,
-          title: 'You',
-        });
-      }
-    }
-
     const green = hole?.greenCentre;
 
-    if (from && target) {
+    // Segments run tee → you → target → green. A leg is dropped when its two
+    // ends coincide (e.g. the target still sits on the green centre).
+    const wanted: { key: string; a: LatLng; b: LatLng }[] = [];
+    const push = (key: string, a?: LatLng | null, b?: LatLng | null) => {
+      if (a && b && distanceM(a, b) > 3) wanted.push({ key, a, b });
+    };
+    push('tee-you', hole?.tee, player);
+    push('you-target', from, target);
+    push('target-green', target, green);
+
+    const live = legs.current;
+
+    for (const { key, a, b } of wanted) {
       const path = [
-        { lat: from.lat, lng: from.lng },
-        { lat: target.lat, lng: target.lng },
+        { lat: a.lat, lng: a.lng },
+        { lat: b.lat, lng: b.lng },
       ];
-      if (legA.current) {
-        legA.current.setPath(path);
+      const text = fmtDist(distanceM(a, b), settings.units);
+      const mid = midpoint(a, b);
+      const existing = live.get(key);
+
+      if (existing) {
+        existing.line.setPath(path);
+        existing.label.setPosition({ lat: mid.lat, lng: mid.lng });
+        existing.label.setIcon(distanceLabelIcon(text));
       } else {
-        legA.current = new google.maps.Polyline({
-          path,
-          map,
-          strokeColor: 'rgba(255,255,255,0.75)',
-          strokeWeight: 1.5,
+        live.set(key, {
+          line: new google.maps.Polyline({
+            path,
+            map,
+            strokeColor: '#ffffff',
+            strokeOpacity: 0.85,
+            strokeWeight: 1.5,
+            clickable: false,
+          }),
+          label: new google.maps.Marker({
+            position: { lat: mid.lat, lng: mid.lng },
+            map,
+            icon: distanceLabelIcon(text),
+            clickable: false,
+            zIndex: 950,
+          }),
         });
       }
     }
 
-    if (target && green) {
-      const path = [
-        { lat: target.lat, lng: target.lng },
-        { lat: green.lat, lng: green.lng },
-      ];
-      if (legB.current) {
-        legB.current.setPath(path);
-      } else {
-        legB.current = new google.maps.Polyline({
-          path,
-          map,
-          strokeColor: 'rgba(255,255,255,0.75)',
-          strokeWeight: 1.5,
-        });
-      }
+    // Drop legs that no longer apply.
+    const keep = new Set(wanted.map((w) => w.key));
+    for (const [key, leg] of live) {
+      if (keep.has(key)) continue;
+      leg.line.setMap(null);
+      leg.label.setMap(null);
+      live.delete(key);
     }
-  }, [map, player, from, target, hole]);
+  }, [map, player, from, target, hole, settings.units]);
 
   useEffect(
     () => () => {
-      legA.current?.setMap(null);
-      legB.current?.setMap(null);
+      for (const leg of legs.current.values()) {
+        leg.line.setMap(null);
+        leg.label.setMap(null);
+      }
+      legs.current.clear();
       playerMarker.current?.setMap(null);
-      legA.current = legB.current = null;
       playerMarker.current = null;
     },
     [],
   );
-
-  /* --- readouts ----------------------------------------------------------- */
-  const d = useMemo(() => {
-    const g = hole;
-    return {
-      front: from && g?.greenFront ? distanceM(from, g.greenFront) : null,
-      centre: from && g?.greenCentre ? distanceM(from, g.greenCentre) : null,
-      back: from && g?.greenBack ? distanceM(from, g.greenBack) : null,
-      toTarget: from && target ? distanceM(from, target) : null,
-      targetToGreen: target && g?.greenCentre ? distanceM(target, g.greenCentre) : null,
-    };
-  }, [from, target, hole]);
 
   if (!activeRound || !course) {
     return (
@@ -248,6 +267,12 @@ export default function PlayMap() {
     if (hole?.greenCentre) bounds.extend({ lat: hole.greenCentre.lat, lng: hole.greenCentre.lng });
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
     else if (from) map.setCenter({ lat: from.lat, lng: from.lng });
+
+    // fitBounds snaps back to north — re-apply the tee → green heading after it settles.
+    if (hole?.tee && hole.greenCentre) {
+      const h = bearing(hole.tee, hole.greenCentre);
+      google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(h));
+    }
   }
 
   return (
@@ -260,34 +285,9 @@ export default function PlayMap() {
       <div className="play">
         <div className="play__map">
           <GoogleMap centre={centre} zoom={17} onReady={setMap} onMapClick={setTarget} />
-          <div className="play__hud">
-            <div>
-              <b>FRONT</b>
-              <span>{fmtDist(d.front, settings.units)}</span>
-            </div>
-            <div>
-              <b>CENTRE</b>
-              <span className="c-cyan">{fmtDist(d.centre, settings.units)}</span>
-            </div>
-            <div>
-              <b>BACK</b>
-              <span>{fmtDist(d.back, settings.units)}</span>
-            </div>
-          </div>
         </div>
 
         <div className="play__panel">
-          <div className="play__legs">
-            <div className="play__leg">
-              <b>YOU → TARGET</b>
-              <span>{fmtDist(d.toTarget, settings.units)}</span>
-            </div>
-            <div className="play__leg">
-              <b>TARGET → GREEN</b>
-              <span className="c-cyan">{fmtDist(d.targetToGreen, settings.units)}</span>
-            </div>
-          </div>
-
           {gpsError && (
             <p className="muted" style={{ color: 'var(--red)', fontSize: 11 }}>
               NO GPS FIX — distances measured from the tee box.

@@ -266,7 +266,16 @@ function HoleEditorInner({ course, hole }: { course: Course; hole: Hole }) {
       subtitle={`Par ${par} · ${course.name}`}
       back={`/courses/edit/${course.id}`}
     >
-      <div style={{ height: 240, border: '1px solid var(--cyan-dim)', position: 'relative' }}>
+      <div
+        style={{
+          // `flex: 0 0` — the screen body is a flex column, so a plain height
+          // gets shrunk to nothing once the panels below overflow.
+          flex: '0 0 240px',
+          height: 240,
+          border: '1px solid var(--cyan-dim)',
+          position: 'relative',
+        }}
+      >
         <GoogleMap
           centre={hole.tee ?? hole.greenCentre ?? course.centre}
           zoom={18}
