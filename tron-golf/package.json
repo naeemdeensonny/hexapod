@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host",
     "smoke": "node scripts/smoke-flow.mjs",
+    "harden-check": "node scripts/harden-check.mjs",
     "android": "npm run build && cap sync && cap open android"
   },
   "dependencies": {

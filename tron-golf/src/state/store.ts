@@ -1,49 +1,25 @@
 import { useSyncExternalStore } from 'react';
+import { loadState, saveState, getStorageStatus, subscribeStorageStatus } from './persist';
+import { DEFAULT_SETTINGS, parseAppState } from './schema';
 import { seedCourses } from './seed';
 import type { AppState, Course, Fairway, Hole, HoleScore, Round, Settings } from './types';
-
-const KEY = 'tron-golf:v1';
-
-const DEFAULT_SETTINGS: Settings = {
-  units: 'm',
-  defaultTee: 'Blue',
-  gpsAccuracy: 'high',
-  autoSave: true,
-  keepScreenOn: false,
-};
 
 function initial(): AppState {
   return { courses: seedCourses(), rounds: [], activeRound: null, settings: DEFAULT_SETTINGS };
 }
 
-/** Read persisted state, falling back to seed data on first run or bad JSON. */
-function load(): AppState {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return initial();
-    const parsed = JSON.parse(raw) as Partial<AppState>;
-    return {
-      courses: parsed.courses?.length ? parsed.courses : seedCourses(),
-      rounds: parsed.rounds ?? [],
-      activeRound: parsed.activeRound ?? null,
-      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
-    };
-  } catch {
-    return initial();
-  }
-}
-
-let state: AppState = load();
+/**
+ * Boot state: validated persisted data, or seed courses on a genuinely fresh
+ * device. `loadState` handles corruption, versioning and snapshot recovery, and
+ * records what it had to do in `getStorageStatus()`.
+ */
+let state: AppState = loadState() ?? initial();
 const listeners = new Set<() => void>();
 
-/** Every mutation writes straight through to localStorage — offline-first. */
+/** Every mutation writes straight through to storage — offline-first. */
 function commit(next: AppState) {
   state = next;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    /* storage full or blocked: keep running from memory */
-  }
+  saveState(state);
   listeners.forEach((l) => l());
 }
 
@@ -55,6 +31,13 @@ function subscribe(l: () => void) {
 export function useStore(): AppState {
   return useSyncExternalStore(subscribe, () => state);
 }
+
+/** Live storage health: availability, write errors, and repairs made at load. */
+export function useStorageStatus() {
+  return useSyncExternalStore(subscribeStorageStatus, getStorageStatus);
+}
+
+export { getStorageStatus } from './persist';
 
 export function getState(): AppState {
   return state;
@@ -189,14 +172,16 @@ export function backupFilename(): string {
 }
 
 export type ImportResult =
-  | { ok: true; courses: number; rounds: number }
+  | { ok: true; courses: number; rounds: number; repairs: string[] }
   | { ok: false; error: string };
 
 /**
- * Replace all local data with the contents of a backup string. Validates the
- * envelope before touching anything, so a bad paste can't wipe your data.
- * Accepts both the wrapped `{ app, version, state }` envelope and a bare
- * `AppState` (courses/settings) for resilience.
+ * Replace all local data with the contents of a backup string.
+ *
+ * The payload goes through the same validator as persisted state, so a
+ * truncated or hand-edited file is repaired field by field rather than trusted
+ * wholesale — and an import that would leave you with nothing is refused
+ * outright instead of wiping what you already have.
  */
 export function importBackup(raw: string): ImportResult {
   let parsed: unknown;
@@ -207,22 +192,20 @@ export function importBackup(raw: string): ImportResult {
   }
 
   const obj = parsed as Partial<Backup> & Partial<AppState>;
-  const incoming: Partial<AppState> | undefined =
-    obj && (obj as Backup).state ? (obj as Backup).state : (obj as AppState);
+  const incoming: unknown = obj && (obj as Backup).state ? (obj as Backup).state : parsed;
 
-  if (!incoming || !Array.isArray(incoming.courses)) {
-    return { ok: false, error: 'This file has no courses — not a TRON Golf backup.' };
+  const result = parseAppState(incoming);
+  if (result.empty) {
+    return { ok: false, error: 'No readable courses in that file — nothing was changed.' };
   }
 
-  const next: AppState = {
-    courses: incoming.courses,
-    rounds: Array.isArray(incoming.rounds) ? incoming.rounds : [],
-    activeRound: incoming.activeRound ?? null,
-    settings: { ...DEFAULT_SETTINGS, ...(incoming.settings ?? {}) },
+  commit(result.state);
+  return {
+    ok: true,
+    courses: result.state.courses.length,
+    rounds: result.state.rounds.length,
+    repairs: result.repairs,
   };
-
-  commit(next);
-  return { ok: true, courses: next.courses.length, rounds: next.rounds.length };
 }
 
 /* --- derived helpers ---------------------------------------------------- */

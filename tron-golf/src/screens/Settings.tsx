@@ -7,6 +7,7 @@ import {
   exportBackup,
   importBackup,
   updateSettings,
+  useStorageStatus,
   useStore,
 } from '../state/store';
 import { GOOGLE_MAPS_KEY } from '../map/provider';
@@ -47,7 +48,12 @@ function BackupPanel() {
     const r = importBackup(raw);
     setMsg(
       r.ok
-        ? { tone: 'ok', text: `Restored ${r.courses} course(s), ${r.rounds} round(s).` }
+        ? {
+            tone: 'ok',
+            text:
+              `Restored ${r.courses} course(s), ${r.rounds} round(s).` +
+              (r.repairs.length ? ` Repaired: ${r.repairs.join(' ')}` : ''),
+          }
         : { tone: 'err', text: r.error },
     );
   }
@@ -105,11 +111,50 @@ function BackupPanel() {
   );
 }
 
+/**
+ * Storage health. Renders nothing when everything is fine — this only exists to
+ * make silent data problems loud, not to add chrome to a working app.
+ */
+function StorageHealth() {
+  const status = useStorageStatus();
+  const bad = !status.available || !!status.lastError;
+  if (!bad && status.repairs.length === 0) return null;
+
+  return (
+    <Panel title={bad ? 'STORAGE PROBLEM' : 'DATA REPAIRED'}>
+      {status.lastError && (
+        <p className="muted" style={{ fontSize: 11, color: 'var(--red)' }}>
+          {status.lastError}
+        </p>
+      )}
+      {!status.available && !status.lastError && (
+        <p className="muted" style={{ fontSize: 11, color: 'var(--red)' }}>
+          This device is blocking local storage — nothing will be saved.
+        </p>
+      )}
+      {status.recoveredFromSnapshot && (
+        <p className="muted" style={{ fontSize: 11, color: 'var(--amber)' }}>
+          Recovered from the last good snapshot.
+        </p>
+      )}
+      {status.repairs.map((r) => (
+        <p key={r} className="muted" style={{ fontSize: 11, color: 'var(--amber)' }}>
+          {r}
+        </p>
+      ))}
+      <p className="muted" style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>
+        Export a backup below to be safe.
+      </p>
+    </Panel>
+  );
+}
+
 export default function Settings() {
   const { settings } = useStore();
 
   return (
     <Screen title="SETTINGS">
+      <StorageHealth />
       <Panel title="UNITS">
         <Segmented
           value={settings.units}

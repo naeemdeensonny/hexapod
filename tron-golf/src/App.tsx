@@ -13,6 +13,7 @@ import Scorecard from './screens/Scorecard';
 import RoundComplete from './screens/RoundComplete';
 import History from './screens/History';
 import Settings from './screens/Settings';
+import ErrorBoundary from './components/ErrorBoundary';
 import { discardRound, getState, useStore } from './state/store';
 
 /** Holds the screen awake during a round when the setting is on. */
@@ -118,8 +119,10 @@ function Shell() {
 
 export default function App() {
   return (
-    <HashRouter>
-      <Shell />
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <Shell />
+      </HashRouter>
+    </ErrorBoundary>
   );
 }
