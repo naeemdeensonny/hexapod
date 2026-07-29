@@ -17,7 +17,7 @@ export default function AddCourse() {
   const [location, setLocation] = useState('');
   const [holeCount, setHoleCount] = useState(18);
   const [par, setPar] = useState(72);
-  const [tees, setTees] = useState<string[]>([...TEE_OPTIONS]);
+  const tees = [...TEE_OPTIONS];
   const [point, setPoint] = useState<LatLng | null>(null);
 
   // Separate text state so partial typing doesn't reset the map marker.
@@ -125,22 +125,6 @@ export default function AddCourse() {
               />
             </Field>
           </div>
-          <Field label="TEE SETS">
-            <div className="seg">
-              {TEE_OPTIONS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={`seg__opt ${tees.includes(t) ? 'seg__opt--on' : ''}`}
-                  onClick={() =>
-                    setTees((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))
-                  }
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </Field>
         </div>
       </Panel>
 

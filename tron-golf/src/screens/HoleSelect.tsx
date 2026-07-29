@@ -35,7 +35,7 @@ export default function HoleSelect() {
             {activeRound.courseName}
           </div>
           <div className="muted">
-            {activeRound.tee} Tee · {max} Holes
+            {max} Holes
           </div>
         </div>
       </Panel>

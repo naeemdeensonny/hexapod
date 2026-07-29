@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Screen from '../components/Screen';
-import { Button, KV, Panel } from '../components/ui';
+import { Button, ConfirmButton, KV, MarqueeText, Panel } from '../components/ui';
 import GoogleMap from '../map/GoogleMap';
 import { previewTileUrl } from '../map/provider';
 import { fmtDist } from '../state/geo';
@@ -27,10 +27,12 @@ export default function Courses() {
   const [selected, setSelected] = useState<Course | null>(null);
 
   if (selected) {
-    const tee = selected.tees.includes(settings.defaultTee) ? settings.defaultTee : selected.tees[0];
+    const tee = selected.tees[0];
 
     function handleDelete() {
-      if (!confirm(`Delete "${selected!.name}"? This cannot be undone.`)) return;
+      // ConfirmButton has already required a deliberate second tap; the dialog
+      // is the final gate because a course is dozens of hand-placed pins.
+      if (!confirm(`Delete "${selected!.name}"? All ${selected!.holeCount} holes and their pins will be lost.`)) return;
       deleteCourse(selected!.id);
       setSelected(null);
     }
@@ -41,7 +43,8 @@ export default function Courses() {
           <GoogleMap centre={selected.centre} zoom={15} />
         </div>
 
-        <Panel title={selected.name.toUpperCase()}>
+        <Panel>
+          <MarqueeText className="panel__title" text={selected.name.toUpperCase()} />
           <KV k="HOLES" v={selected.holeCount} />
           <KV k="PAR" v={selected.par} />
           <KV k="TOTAL" v={fmtDist(totalMetres(selected, tee), settings.units)} />
@@ -65,9 +68,9 @@ export default function Courses() {
           <Button variant="ghost" onClick={() => setSelected(null)}>
             BACK TO LIST
           </Button>
-          <Button variant="danger" size="sm" onClick={handleDelete}>
+          <ConfirmButton size="sm" onConfirm={handleDelete} armedLabel="TAP AGAIN TO DELETE">
             DELETE COURSE
-          </Button>
+          </ConfirmButton>
         </div>
       </Screen>
     );
@@ -90,7 +93,7 @@ export default function Courses() {
               }}
             />
             <span className="card__main">
-              <span className="card__name">{c.name}</span>
+              <MarqueeText className="card__name" text={c.name} />
               <span className="card__meta">
                 {c.holeCount} holes · Par {c.par}
               </span>

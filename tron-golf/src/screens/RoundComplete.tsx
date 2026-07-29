@@ -42,7 +42,7 @@ export default function RoundComplete() {
             {activeRound.courseName}
           </div>
           <div className="muted">
-            {activeRound.tee} Tee · {activeRound.holeCount} Holes
+            {activeRound.holeCount} Holes
           </div>
         </div>
       </Panel>

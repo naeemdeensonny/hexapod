@@ -49,6 +49,10 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
         zoom,
         mapTypeId: google.maps.MapTypeId.SATELLITE,
         disableDefaultUI: true,
+        // Drops the "Keyboard shortcuts" button, which is pure clutter on a
+        // phone. The imagery credit and Terms link next to it are required by
+        // the Google Maps Platform terms and cannot be removed.
+        keyboardShortcuts: false,
         gestureHandling: 'greedy',
         backgroundColor: '#000820',
         // A Map ID switches the API to VECTOR rendering, which is the only

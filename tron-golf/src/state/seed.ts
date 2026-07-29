@@ -82,7 +82,7 @@ export function seedCourses(): Course[] {
       location: 'Puchong, Selangor',
       holeCount: 18,
       par: KINRARA_SPEC.reduce((t, h) => t + h.par, 0),
-      tees: ['Blue', 'White', 'Red'],
+      tees: [SINGLE_TEE],
       centre: KINRARA_CENTRE,
       description:
         'Mature parkland layout with tight tree-lined fairways and water in play on the closing stretch.',
@@ -92,7 +92,16 @@ export function seedCourses(): Course[] {
   ];
 }
 
-export const TEE_OPTIONS = ['Blue', 'White', 'Red'];
+/**
+ * The app plays a single tee set. Multiple tee sets were dropped because they
+ * multiplied every distance table and every setup screen for a feature nobody
+ * used — one set of pins per hole is what actually gets measured on the course.
+ * Kept as a named constant (rather than inlined) so the distance tables stay
+ * keyed consistently.
+ */
+export const SINGLE_TEE = 'Blue';
+
+export const TEE_OPTIONS = [SINGLE_TEE];
 
 /**
  * Build a playable hole list for a user-added course: pars are distributed to

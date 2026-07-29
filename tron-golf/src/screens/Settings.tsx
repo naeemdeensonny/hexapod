@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import Screen from '../components/Screen';
 import { Button, Panel, Segmented, SettingRow, Toggle } from '../components/ui';
-import { TEE_OPTIONS } from '../state/seed';
 import {
   backupFilename,
   exportBackup,
@@ -163,14 +162,6 @@ export default function Settings() {
             { value: 'm', label: 'METRES' },
             { value: 'yd', label: 'YARDS' },
           ]}
-        />
-      </Panel>
-
-      <Panel title="DEFAULT TEE">
-        <Segmented
-          value={settings.defaultTee}
-          onChange={(defaultTee) => updateSettings({ defaultTee })}
-          options={TEE_OPTIONS.map((t) => ({ value: t, label: `${t.toUpperCase()} TEE` }))}
         />
       </Panel>
 

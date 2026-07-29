@@ -1,19 +1,14 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Screen from '../components/Screen';
-import { Button, KV, Panel, Segmented, Toggle } from '../components/ui';
+import { Button, KV, MarqueeText, Panel } from '../components/ui';
+import { SINGLE_TEE } from '../state/seed';
 import { startRound, useStore } from '../state/store';
 
 export default function RoundSetup() {
   const { courseId } = useParams();
   const nav = useNavigate();
-  const { courses, settings } = useStore();
+  const { courses } = useStore();
   const course = courses.find((c) => c.id === courseId);
-
-  const [tee, setTee] = useState(
-    course?.tees.includes(settings.defaultTee) ? settings.defaultTee : (course?.tees[0] ?? 'Blue'),
-  );
-  const [handicapOn, setHandicapOn] = useState(false);
 
   if (!course) {
     return (
@@ -23,38 +18,28 @@ export default function RoundSetup() {
     );
   }
 
+  // One tee set, no handicap prompt: both were choices with a single sensible
+  // answer, so the setup screen is now just a confirmation of what you picked.
+  const tee = course.tees[0] ?? SINGLE_TEE;
+
   function begin() {
     if (!course) return;
-    startRound(course.id, tee, handicapOn);
+    startRound(course.id, tee, false);
     nav('/hole');
   }
 
   return (
     <Screen title="ROUND SETUP" back="/courses">
       <Panel title="ROUND">
-        <KV k="COURSE" v={course.name} />
-        <KV k="TEE SET" v={`${tee} Tee`} color="var(--cyan)" />
-        <KV k="HOLES" v={course.holeCount} />
-        <KV k="FORMAT" v="Stroke Play" />
-        <KV k="HANDICAP" v={handicapOn ? 'On' : 'Off'} />
-      </Panel>
-
-      <Panel title="TEE SET">
-        <Segmented
-          value={tee}
-          onChange={setTee}
-          options={course.tees.map((t) => ({ value: t, label: `${t.toUpperCase()} TEE` }))}
-        />
-      </Panel>
-
-      <Panel title="OPTIONS">
-        <div className="kv" style={{ alignItems: 'center', minHeight: 46 }}>
-          <span className="kv__k">HANDICAP</span>
-          <Toggle on={handicapOn} onChange={setHandicapOn} />
+        <div className="kv">
+          <span className="kv__k">COURSE</span>
+          <span className="kv__v" style={{ minWidth: 0, flex: 1, textAlign: 'right' }}>
+            <MarqueeText text={course.name} />
+          </span>
         </div>
-        <p className="muted" style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-          V1 records gross strokes only. Handicap allowances are not applied yet.
-        </p>
+        <KV k="HOLES" v={course.holeCount} />
+        <KV k="PAR" v={course.par} />
+        <KV k="FORMAT" v="Stroke Play" />
       </Panel>
 
       <Button variant="primary" style={{ marginTop: 'auto' }} onClick={begin}>

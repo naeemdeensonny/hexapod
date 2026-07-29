@@ -18,7 +18,7 @@ export default function EditCourse() {
   const [location, setLocation] = useState(course?.location ?? '');
   const [holeCount, setHoleCount] = useState(course?.holeCount ?? 18);
   const [par, setPar] = useState(course?.par ?? 72);
-  const [tees, setTees] = useState<string[]>(course?.tees ?? [...TEE_OPTIONS]);
+  const tees = [...TEE_OPTIONS];
   const [point, setPoint] = useState<LatLng | null>(course?.centre ?? null);
   const [latText, setLatText] = useState(course?.centre.lat.toFixed(6) ?? '');
   const [lngText, setLngText] = useState(course?.centre.lng.toFixed(6) ?? '');
@@ -144,22 +144,6 @@ export default function EditCourse() {
               />
             </Field>
           </div>
-          <Field label="TEE SETS">
-            <div className="seg">
-              {TEE_OPTIONS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={`seg__opt ${tees.includes(t) ? 'seg__opt--on' : ''}`}
-                  onClick={() =>
-                    setTees((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))
-                  }
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </Field>
           {holeCountChanged && (
             <p className="muted" style={{ color: 'var(--amber)', fontSize: 11 }}>
               Changing hole count regenerates all hole data.

@@ -114,7 +114,7 @@ export default function Scorecard() {
             {round.courseName}
           </div>
           <div className="muted">
-            {round.tee} Tee · {round.holeCount} Holes · {round.format}
+            {round.holeCount} Holes · {round.format}
           </div>
         </div>
       </Panel>

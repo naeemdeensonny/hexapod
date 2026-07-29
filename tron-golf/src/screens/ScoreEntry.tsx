@@ -70,7 +70,7 @@ export default function ScoreEntry() {
             {activeRound.courseName}
           </div>
           <div className="muted">
-            {activeRound.tee} Tee · Hole {holeNo} · Par {par}
+            Hole {holeNo} · Par {par}
           </div>
         </div>
       </Panel>

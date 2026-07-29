@@ -172,6 +172,58 @@
   font-size: var(--fs-micro);
 }
 
+/* Armed state of ConfirmButton: unmistakably hot, so the second tap is a choice. */
+.btn--armed {
+  background: var(--red);
+  color: #180205;
+  border-color: var(--red);
+  box-shadow: 0 0 14px rgba(255, 77, 94, 0.5);
+  animation: armed-pulse 0.9s steps(2) infinite;
+}
+@keyframes armed-pulse {
+  50% {
+    box-shadow: 0 0 4px rgba(255, 77, 94, 0.35);
+  }
+}
+
+/* --- overflow-aware scrolling text --------------------------------------- */
+.marquee {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+}
+.marquee__inner {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+/* Only the measured-overflow case animates; everything else is plain text. */
+.marquee--on .marquee__inner {
+  animation: marquee-scan var(--marquee-dur, 10s) ease-in-out infinite;
+}
+@keyframes marquee-scan {
+  0%,
+  14% {
+    transform: translateX(0);
+  }
+  50%,
+  64% {
+    transform: translateX(var(--marquee-shift, 0));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee--on .marquee__inner {
+    animation: none;
+  }
+  .marquee {
+    text-overflow: ellipsis;
+  }
+}
+
 .btn-row {
   display: flex;
   gap: var(--sp-2);
@@ -552,6 +604,43 @@
   font-family: var(--font-mono);
   font-size: 18px;
   color: var(--amber);
+}
+
+/* --- hole nav on the playing map ----------------------------------------- */
+.holenav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.holenav__arrow {
+  width: 46px;
+  height: 34px;
+  flex: 0 0 46px;
+  background: var(--panel-sunk);
+  border: var(--bw) solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  padding: 0;
+}
+.holenav__arrow:active {
+  background: var(--panel-hi);
+}
+.holenav__arrow:disabled {
+  opacity: 0.28;
+}
+.holenav__label {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: var(--fs-label);
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+.holenav__label b {
+  font-weight: normal;
+  color: var(--text-faint);
+  margin-left: 3px;
 }
 
 /* --- hole editor layout -------------------------------------------------- */

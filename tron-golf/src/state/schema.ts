@@ -12,7 +12,7 @@
  * small and closed, the app must work offline, and this keeps the bundle free
  * of another dependency.
  */
-import { TEE_OPTIONS } from './seed';
+import { SINGLE_TEE } from './seed';
 import type {
   AppState,
   Course,
@@ -179,9 +179,21 @@ function parseCourse(v: unknown, repairs: string[]): Course | null {
     repairs.push(`${name}: rebuilt ${synthesised} unreadable hole(s) with defaults.`);
   }
 
-  const tees = Array.isArray(v.tees)
+  // The app now plays a single tee set. Courses saved with several are folded
+  // onto it, keeping whichever measured distance the course actually used, so
+  // a course pinned under a "White" tee keeps its yardages.
+  const storedTees = Array.isArray(v.tees)
     ? (v.tees.map((t) => str(t, 30)).filter(Boolean) as string[])
     : [];
+  const primaryTee = storedTees[0];
+  if (primaryTee && (storedTees.length > 1 || primaryTee !== SINGLE_TEE)) {
+    for (const h of holes) {
+      const kept =
+        h.distances[SINGLE_TEE] ?? h.distances[primaryTee] ?? Object.values(h.distances)[0];
+      h.distances = kept ? { [SINGLE_TEE]: kept } : {};
+    }
+    repairs.push(`${name}: tee sets merged into one, distances kept.`);
+  }
 
   const centre =
     latLng(v.centre) ??
@@ -201,7 +213,7 @@ function parseCourse(v: unknown, repairs: string[]): Course | null {
     // Recomputed, never trusted: keeps the header total honest even if the
     // stored value drifted from the actual hole pars.
     par: holes.reduce((sum, h) => sum + h.par, 0),
-    tees: tees.length ? tees : [...TEE_OPTIONS],
+    tees: [SINGLE_TEE],
     centre: centre ?? { lat: 0, lng: 0 },
     description: str(v.description, 500) ?? '',
     holes,
@@ -250,7 +262,8 @@ function parseRound(v: unknown): Round | null {
     id,
     courseId,
     courseName,
-    tee: str(v.tee, 30) ?? TEE_OPTIONS[0],
+    // Historical rounds keep whatever tee name they were played under.
+    tee: str(v.tee, 30) ?? SINGLE_TEE,
     holeCount,
     format: 'Stroke Play',
     handicapOn: bool(v.handicapOn, false),

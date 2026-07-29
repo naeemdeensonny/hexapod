@@ -10,7 +10,7 @@ import GoogleMap, {
   paddedBounds,
 } from '../map/GoogleMap';
 import { bearing, distanceM, fmtDist } from '../state/geo';
-import { courseById, useStore } from '../state/store';
+import { courseById, setCurrentHole, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
 
 /** Slack around the hole so the tee and green never sit hard against the edge. */
@@ -311,7 +311,7 @@ export default function PlayMap() {
   return (
     <Screen
       title={`HOLE ${activeRound.currentHole}`}
-      subtitle={`Par ${hole?.par ?? '-'} · ${activeRound.tee}`}
+      subtitle={`Par ${hole?.par ?? "-"}`}
       back="/hole"
       flush
     >
@@ -330,6 +330,30 @@ export default function PlayMap() {
               NOT AT THE COURSE — showing tee to green. GPS tracking starts when you arrive.
             </p>
           ) : null}
+
+          {/* Jump between holes without leaving the map. */}
+          <div className="holenav">
+            <button
+              className="holenav__arrow"
+              disabled={activeRound.currentHole <= 1}
+              onClick={() => setCurrentHole(activeRound.currentHole - 1)}
+              aria-label="Previous hole"
+            >
+              {'‹'}
+            </button>
+            <span className="holenav__label">
+              HOLE {activeRound.currentHole}
+              <b>/{activeRound.holeCount}</b>
+            </span>
+            <button
+              className="holenav__arrow"
+              disabled={activeRound.currentHole >= activeRound.holeCount}
+              onClick={() => setCurrentHole(activeRound.currentHole + 1)}
+              aria-label="Next hole"
+            >
+              {'›'}
+            </button>
+          </div>
 
           <div className="btn-row">
             <Button size="sm" onClick={recentre}>
