@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Screen from '../components/Screen';
-import { Button, Field, Panel, Segmented, Stepper } from '../components/ui';
+import { Button, Field, Segmented, Stepper } from '../components/ui';
 import GoogleMap, { markerIcon } from '../map/GoogleMap';
 import { bearing, distanceM, fmtDist } from '../state/geo';
 import { courseById, updateHole, useStore } from '../state/store';
@@ -56,74 +56,39 @@ function CoordRow({
   }
 
   return (
-    <div
-      style={{
-        border: `1px solid ${active ? 'var(--cyan)' : 'var(--cyan-dim)'}`,
-        borderRadius: 4,
-        padding: '10px 10px 8px',
-        background: active ? 'rgba(53,224,255,0.05)' : 'transparent',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: 8,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-pixel)', fontSize: 9,
-            color: active ? 'var(--cyan)' : 'var(--text-dim)',
-          }}
-        >
-          {label}
-        </span>
-        {!active && (
-          <button
-            type="button"
-            onClick={onActivate}
-            style={{
-              fontFamily: 'var(--font-pixel)', fontSize: 8,
-              color: 'var(--cyan)', background: 'transparent',
-              border: '1px solid var(--cyan-dim)', padding: '3px 8px', cursor: 'pointer',
-            }}
-          >
-            TAP TO EDIT
-          </button>
-        )}
-        {active && (
-          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: 8, color: 'var(--cyan)' }}>
-            ACTIVE — tap map or enter below
+    <div className={`coord ${active ? 'coord--on' : ''}`}>
+      <div className="coord__head">
+        <span className="coord__name">{label}</span>
+        {active ? (
+          <span className="coord__name" style={{ color: 'var(--cyan)' }}>
+            TAP MAP
           </span>
+        ) : (
+          <button type="button" className="coord__hint" onClick={onActivate}>
+            EDIT
+          </button>
         )}
       </div>
       <div className="btn-row">
-        <Field label="LAT">
-          <input
-            className="input"
-            inputMode="decimal"
-            value={lat}
-            onFocus={onActivate}
-            onChange={(e) => setLat(e.target.value)}
-            onBlur={apply}
-          />
-        </Field>
-        <Field label="LNG">
-          <input
-            className="input"
-            inputMode="decimal"
-            value={lng}
-            onFocus={onActivate}
-            onChange={(e) => setLng(e.target.value)}
-            onBlur={apply}
-          />
-        </Field>
+        <input
+          className="input"
+          inputMode="decimal"
+          aria-label={`${label} latitude`}
+          value={lat}
+          onFocus={onActivate}
+          onChange={(e) => setLat(e.target.value)}
+          onBlur={apply}
+        />
+        <input
+          className="input"
+          inputMode="decimal"
+          aria-label={`${label} longitude`}
+          value={lng}
+          onFocus={onActivate}
+          onChange={(e) => setLng(e.target.value)}
+          onBlur={apply}
+        />
       </div>
-      {point && (
-        <p style={{ fontSize: 10, color: 'var(--text-faint)', margin: '4px 0 0', fontFamily: 'var(--font-mono)' }}>
-          {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
-        </p>
-      )}
     </div>
   );
 }
@@ -265,60 +230,31 @@ function HoleEditorInner({ course, hole }: { course: Course; hole: Hole }) {
       title={`HOLE ${hole.number}`}
       subtitle={`Par ${par} · ${course.name}`}
       back={`/courses/edit/${course.id}`}
+      flush
     >
-      <div
-        style={{
-          // `flex: 0 0` — the screen body is a flex column, so a plain height
-          // gets shrunk to nothing once the panels below overflow.
-          flex: '0 0 240px',
-          height: 240,
-          border: '1px solid var(--cyan-dim)',
-          position: 'relative',
-        }}
-      >
-        <GoogleMap
-          centre={hole.tee ?? hole.greenCentre ?? course.centre}
-          zoom={18}
-          onReady={onMapReady}
-          onMapClick={onMapClick}
-        />
-        <div
-          style={{
-            position: 'absolute', top: 8, left: 8, zIndex: 10,
-            background: 'rgba(5,10,18,0.85)', border: '1px solid var(--cyan)',
-            color: 'var(--cyan)', fontFamily: 'var(--font-pixel)', fontSize: 8,
-            padding: '5px 8px', lineHeight: 1.4,
-          }}
-        >
-          PLACING: {mode === 'tee' ? 'TEE BOX' : 'GREEN CENTRE'}
-        </div>
-        {measured && (
-          <div
-            style={{
-              position: 'absolute', bottom: 8, left: 8, zIndex: 10,
-              background: 'rgba(5,10,18,0.85)', border: '1px solid var(--cyan-dim)',
-              color: 'var(--text-dim)', fontFamily: 'var(--font-pixel)', fontSize: 8,
-              padding: '5px 7px', lineHeight: 1.4,
-            }}
-          >
-            {fmtDist(measured, settings.units)}
+      <div className="hedit">
+        <div className="hedit__map">
+          <GoogleMap
+            centre={hole.tee ?? hole.greenCentre ?? course.centre}
+            zoom={18}
+            onReady={onMapReady}
+            onMapClick={onMapClick}
+          />
+          <div className="hedit__badge">
+            PLACING: {mode === 'tee' ? 'TEE' : 'GREEN'}
           </div>
-        )}
-      </div>
+          {measured && <div className="hedit__dist">{fmtDist(measured, settings.units)}</div>}
+        </div>
 
-      <Panel title="PIN POINTS">
-        <div className="stack">
+        <div className="hedit__body">
           <Segmented<Mode>
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'tee', label: '▸ TEE BOX' },
-              { value: 'green', label: '▸ GREEN CENTRE' },
+              { value: 'tee', label: 'TEE BOX' },
+              { value: 'green', label: 'GREEN' },
             ]}
           />
-          <p className="muted" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-            Select which pin map taps move, then tap the satellite image.
-          </p>
 
           <CoordRow
             label="TEE BOX"
@@ -335,40 +271,30 @@ function HoleEditorInner({ course, hole }: { course: Course; hole: Hole }) {
             onActivate={() => setMode('green')}
             onApply={(p) => { setGreenC(p); mapRef.current?.setCenter(p); }}
           />
-        </div>
-      </Panel>
 
-      <Panel title="HOLE DATA">
-        <div className="stack">
           <div className="btn-row">
             <Field label="PAR">
               <Stepper value={par} onChange={setPar} min={3} max={6} />
             </Field>
-            <Field label="STROKE INDEX">
+            <Field label="INDEX">
               <Stepper value={index} onChange={setIndex} min={1} max={course.holeCount} />
             </Field>
           </div>
-          {measured && (
-            <p className="muted" style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-              Distance {fmtDist(measured, settings.units)} — saved automatically from the map.
-            </p>
-          )}
-        </div>
-      </Panel>
 
-      <div className="stack">
-        <div className="btn-row">
-          <Button size="sm" disabled={!prev} onClick={() => prev && goto(prev)}>{'‹ PREV'}</Button>
-          <Button size="sm" variant="ghost" onClick={lockFence}>LOCK FENCE</Button>
-          <Button size="sm" disabled={!next} onClick={() => next && goto(next)}>{'NEXT ›'}</Button>
+          <div className="btn-row">
+            <Button size="sm" disabled={!prev} onClick={() => prev && goto(prev)}>{'‹ PREV'}</Button>
+            <Button size="sm" variant="ghost" onClick={lockFence}>FENCE</Button>
+            <Button size="sm" disabled={!next} onClick={() => next && goto(next)}>{'NEXT ›'}</Button>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={save}
+            style={saved ? { color: 'var(--green)' } : undefined}
+          >
+            {saved ? 'SAVED ✓' : 'SAVE HOLE'}
+          </Button>
         </div>
-        <Button
-          variant="primary"
-          onClick={save}
-          style={saved ? { color: 'var(--green)' } : undefined}
-        >
-          {saved ? 'SAVED ✓' : 'SAVE HOLE'}
-        </Button>
       </div>
     </Screen>
   );

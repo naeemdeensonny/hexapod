@@ -38,31 +38,31 @@
   /* Narrow mono: hole numbers, scores, distances, tables, supporting info. */
   --font-mono: 'Share Tech Mono', 'Courier New', monospace;
 
-  --fs-title: 13px;
-  --fs-btn: 11px;
-  --fs-label: 9px;
-  --fs-micro: 8px;
-  --fs-body: 14px;
-  --fs-num: 17px;
-  --fs-num-lg: 30px;
+  --fs-title: 11px;
+  --fs-btn: 10px;
+  --fs-label: 8px;
+  --fs-micro: 7px;
+  --fs-body: 13px;
+  --fs-num: 15px;
+  --fs-num-lg: 26px;
 
   /* --- spacing system ---------------------------------------------------- */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 24px;
+  --sp-1: 3px;
+  --sp-2: 6px;
+  --sp-3: 9px;
+  --sp-4: 12px;
+  --sp-5: 18px;
 
   /* --- border geometry --------------------------------------------------- */
   --bw: 1px;
   --radius: 0px; /* pixel interface: square corners everywhere */
 
   /* --- chrome proportions (identical on every screen) -------------------- */
-  --header-h: 52px;
-  --nav-h: 56px;
+  --header-h: 44px;
+  --nav-h: 46px;
 
   /* --- touch ------------------------------------------------------------- */
-  --tap: 44px;
+  --tap: 40px;
 
   /* --- safe area insets (overridden by JS on Android) ------------------- */
   --safe-top: env(safe-area-inset-top, 0px);
