@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Screen from '../components/Screen';
 import { Button, Field, Segmented, Stepper } from '../components/ui';
-import GoogleMap, { markerIcon } from '../map/GoogleMap';
+import GoogleMap, { faceHeading, markerIcon } from '../map/GoogleMap';
 import { bearing, distanceM, fmtDist } from '../state/geo';
 import { courseById, updateHole, useStore } from '../state/store';
 import type { Course, Hole, LatLng } from '../state/types';
@@ -172,6 +172,7 @@ function HoleEditorInner({ course, hole }: { course: Course; hole: Hole }) {
 
   useEffect(() => {
     if (mapRef.current && tee && greenC) mapRef.current.setHeading(bearing(tee, greenC));
+    // (plain setHeading here: no fitBounds runs on pin edits, so nothing resets it)
   }, [tee, greenC]);
 
   function onMapReady(map: google.maps.Map) {
@@ -179,7 +180,7 @@ function HoleEditorInner({ course, hole }: { course: Course; hole: Hole }) {
     const anchor = hole.tee ?? hole.greenCentre ?? course.centre;
     map.setCenter({ lat: anchor.lat, lng: anchor.lng });
     map.setZoom(18);
-    if (hole.tee && hole.greenCentre) map.setHeading(bearing(hole.tee, hole.greenCentre));
+    if (hole.tee && hole.greenCentre) faceHeading(map, bearing(hole.tee, hole.greenCentre));
     setTee((t) => (t ? { ...t } : t));
     setGreenC((g) => (g ? { ...g } : g));
   }

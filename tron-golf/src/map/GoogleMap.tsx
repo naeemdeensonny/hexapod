@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import './map.css';
-import { GOOGLE_MAPS_KEY } from './provider';
+import { GOOGLE_MAPS_ID, GOOGLE_MAPS_KEY } from './provider';
 import type { LatLng } from '../state/types';
 
 /* --- singleton loader ---------------------------------------------------- */
@@ -51,6 +51,12 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
         disableDefaultUI: true,
         gestureHandling: 'greedy',
         backgroundColor: '#000820',
+        // A Map ID switches the API to VECTOR rendering, which is the only
+        // mode where `setHeading()` works on a top-down satellite view. Omit
+        // it and the map renders as raster and silently refuses to rotate.
+        ...(GOOGLE_MAPS_ID ? { mapId: GOOGLE_MAPS_ID } : {}),
+        // Keep the view flat; we rotate around the vertical axis only.
+        tilt: 0,
       });
 
       map.addListener('click', (e: google.maps.MapMouseEvent) => {
@@ -88,6 +94,24 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
   }
 
   return <div ref={el} className={`sat-map ${className ?? ''}`} />;
+}
+
+/* --- heading -------------------------------------------------------------- */
+
+/**
+ * Point the map along `heading` (degrees clockwise from north).
+ *
+ * Applied twice on purpose: `fitBounds` is asynchronous and snaps the map back
+ * to north, so the value has to be re-set once the camera settles. Setting it
+ * immediately as well covers the case where `fitBounds` changes nothing and
+ * therefore never fires `idle`.
+ *
+ * No-ops unless the map was built with a vector Map ID — see
+ * `GOOGLE_MAPS_ID` in `provider.ts`.
+ */
+export function faceHeading(map: google.maps.Map, heading: number): void {
+  map.setHeading(heading);
+  google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(heading));
 }
 
 /* --- bounds --------------------------------------------------------------- */

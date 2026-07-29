@@ -4,6 +4,7 @@ import Screen from '../components/Screen';
 import { Button } from '../components/ui';
 import GoogleMap, {
   distanceLabelIcon,
+  faceHeading,
   markerIcon,
   midpoint,
   paddedBounds,
@@ -114,9 +115,7 @@ export default function PlayMap() {
     if (hole.tee) bounds.extend({ lat: hole.tee.lat, lng: hole.tee.lng });
     if (hole.greenCentre) bounds.extend({ lat: hole.greenCentre.lat, lng: hole.greenCentre.lng });
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
-    if (h !== null) {
-      google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(h));
-    }
+    if (h !== null) faceHeading(map, h);
 
     return () => {
       staticMarkers.current.forEach((m) => m.setMap(null));
@@ -268,10 +267,9 @@ export default function PlayMap() {
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
     else if (from) map.setCenter({ lat: from.lat, lng: from.lng });
 
-    // fitBounds snaps back to north — re-apply the tee → green heading after it settles.
+    // fitBounds snaps back to north — re-apply the tee → green heading.
     if (hole?.tee && hole.greenCentre) {
-      const h = bearing(hole.tee, hole.greenCentre);
-      google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(h));
+      faceHeading(map, bearing(hole.tee, hole.greenCentre));
     }
   }
 

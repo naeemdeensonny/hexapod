@@ -11,6 +11,20 @@
 
 export const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 
+/**
+ * Map ID of a **vector** map, created in Google Cloud Console under
+ * Google Maps Platform → Map Management, with "Tilt and rotation" enabled.
+ *
+ * This is what makes `map.setHeading()` work. Without a Map ID the API builds
+ * a RASTER map, and on raster maps heading is only honoured at 45° imagery
+ * zoom levels — so a top-down satellite view silently refuses to rotate, with
+ * no error. The app still runs without it; the map just stays north-up.
+ */
+export const GOOGLE_MAPS_ID = import.meta.env.VITE_GOOGLE_MAPS_ID as string | undefined;
+
+/** True when the map can actually be rotated (i.e. a vector Map ID is set). */
+export const MAP_ROTATION_AVAILABLE = !!GOOGLE_MAPS_ID;
+
 const ESRI_TILE =
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
