@@ -19,6 +19,7 @@
 
 .screen-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: var(--sp-3);
@@ -30,6 +31,7 @@
 .screen-body.flush {
   padding: 0;
   gap: 0;
+  overflow: hidden;
 }
 
 /* --- header ------------------------------------------------------------- */
@@ -560,13 +562,13 @@
   min-height: 0;
 }
 .hedit__map {
-  flex: 0 0 44vh;
-  min-height: 180px;
+  flex: 1 1 0;
+  min-height: 200px;
   position: relative;
   border-bottom: var(--bw) solid var(--cyan-dim);
 }
 .hedit__body {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
