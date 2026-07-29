@@ -23,6 +23,14 @@ const HOLE_PAD_M = 180;
  * too steep or too flat. */
 const PLAY_TILT = 60;
 
+/**
+ * How close (metres) the GPS fix must be to the current hole's tee or green
+ * before we trust it as "you are here". Beyond this you are treated as not at
+ * the course — the player marker and the tee→you line are hidden, and the map
+ * just shows tee → green. Generous enough to cover a long par 5 and walking
+ * between holes. */
+const ON_COURSE_M = 800;
+
 export default function PlayMap() {
   const nav = useNavigate();
   const { activeRound, settings } = useStore();
@@ -58,7 +66,20 @@ export default function PlayMap() {
     return () => navigator.geolocation.clearWatch(id);
   }, [settings.gpsAccuracy]);
 
-  const from = player ?? hole?.tee ?? null;
+  // Only trust the GPS fix when it is near the current hole. Off the course
+  // (e.g. sitting at home) the raw fix would draw an absurd tee→you→green
+  // dog-leg, so we drop it and fall back to the tee.
+  const gpsDistToHole =
+    player && hole
+      ? Math.min(
+          hole.tee ? distanceM(player, hole.tee) : Infinity,
+          hole.greenCentre ? distanceM(player, hole.greenCentre) : Infinity,
+        )
+      : Infinity;
+  const onCourse = gpsDistToHole <= ON_COURSE_M;
+  const activePlayer = onCourse ? player : null;
+
+  const from = activePlayer ?? hole?.tee ?? null;
 
   /* --- default target = green centre -------------------------------------- */
   useEffect(() => {
@@ -85,16 +106,17 @@ export default function PlayMap() {
     m.setOptions({ restriction: fence ? { latLngBounds: fence, strictBounds: true } : null });
   }
 
-  // A GPS fix outside the fence would otherwise be unreachable — widen it.
+  // An on-course GPS fix outside the fence would otherwise be unreachable —
+  // widen it. Off-course fixes are ignored, so the fence stays on the hole.
   useEffect(() => {
     const f = fenceRef.current;
-    if (!map || !player || !f) return;
+    if (!map || !activePlayer || !f) return;
     const inside =
-      player.lat >= f.south && player.lat <= f.north &&
-      player.lng >= f.west && player.lng <= f.east;
-    if (!inside) applyFence(map, player);
+      activePlayer.lat >= f.south && activePlayer.lat <= f.north &&
+      activePlayer.lng >= f.west && activePlayer.lng <= f.east;
+    if (!inside) applyFence(map, activePlayer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, player]);
+  }, [map, activePlayer]);
 
   /* --- static hole furniture ---------------------------------------------- */
   useEffect(() => {
@@ -113,7 +135,7 @@ export default function PlayMap() {
     if (hole.greenCentre) add(hole.greenCentre, 'flag', '', 'Green');
     for (const h of hole.hazards ?? []) add(h.point, 'hazard', h.name[0] ?? 'H', h.name);
 
-    applyFence(map, player);
+    applyFence(map, activePlayer);
 
     // Frame both pins, then rotate once the map is idle.
     // fitBounds resets heading to north, so heading must be applied after it settles.
@@ -167,21 +189,27 @@ export default function PlayMap() {
     [],
   );
 
-  /* --- player marker ------------------------------------------------------- */
+  /* --- player marker (only while on the course) --------------------------- */
   useEffect(() => {
-    if (!map || !player) return;
+    if (!map) return;
+    if (!activePlayer) {
+      // Off course: drop the "you" marker entirely.
+      playerMarker.current?.setMap(null);
+      playerMarker.current = null;
+      return;
+    }
     if (playerMarker.current) {
-      playerMarker.current.setPosition({ lat: player.lat, lng: player.lng });
+      playerMarker.current.setPosition({ lat: activePlayer.lat, lng: activePlayer.lng });
     } else {
       playerMarker.current = new google.maps.Marker({
-        position: { lat: player.lat, lng: player.lng },
+        position: { lat: activePlayer.lat, lng: activePlayer.lng },
         map,
         icon: markerIcon('player'),
         zIndex: 900,
         title: 'You',
       });
     }
-  }, [map, player]);
+  }, [map, activePlayer]);
 
   /* --- aiming lines, each labelled with its own distance ------------------- */
   useEffect(() => {
@@ -195,7 +223,7 @@ export default function PlayMap() {
     const push = (key: string, a?: LatLng | null, b?: LatLng | null) => {
       if (a && b && distanceM(a, b) > 3) wanted.push({ key, a, b });
     };
-    push('tee-you', hole?.tee, player);
+    push('tee-you', hole?.tee, activePlayer);
     push('you-target', from, target);
     push('target-green', target, green);
 
@@ -243,7 +271,7 @@ export default function PlayMap() {
       leg.label.setMap(null);
       live.delete(key);
     }
-  }, [map, player, from, target, hole, settings.units]);
+  }, [map, activePlayer, from, target, hole, settings.units]);
 
   useEffect(
     () => () => {
@@ -293,11 +321,15 @@ export default function PlayMap() {
         </div>
 
         <div className="play__panel">
-          {gpsError && (
+          {gpsError ? (
             <p className="muted" style={{ color: 'var(--red)', fontSize: 11 }}>
               NO GPS FIX — distances measured from the tee box.
             </p>
-          )}
+          ) : player && !onCourse ? (
+            <p className="muted" style={{ color: 'var(--amber)', fontSize: 11 }}>
+              NOT AT THE COURSE — showing tee to green. GPS tracking starts when you arrive.
+            </p>
+          ) : null}
 
           <div className="btn-row">
             <Button size="sm" onClick={recentre}>
