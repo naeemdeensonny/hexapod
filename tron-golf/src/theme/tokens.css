@@ -67,6 +67,23 @@
   /* --- safe area insets (overridden by JS on Android) ------------------- */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* --- hole-editor map height -------------------------------------------
+     A hard pixel value on purpose. `vh` resolves against the LARGE viewport
+     in Chrome/Android WebView and cannot be trusted here, and percentage
+     heights need an unbroken parent chain the WebView does not guarantee.
+     Stepped by viewport height via media queries below. */
+  --map-h: 260px;
+}
+
+@media (min-height: 700px) {
+  :root { --map-h: 320px; }
+}
+@media (min-height: 820px) {
+  :root { --map-h: 380px; }
+}
+@media (min-height: 950px) {
+  :root { --map-h: 440px; }
 }
 
 * {

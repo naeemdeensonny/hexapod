@@ -481,14 +481,16 @@
 }
 
 /* --- play map layout ---------------------------------------------------- */
+/* Same rule as `.hedit`: claim height as a flex item, not with `height: 100%`. */
 .play {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 .play__map {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: var(--map-h);
   position: relative;
   border-bottom: var(--bw) solid var(--cyan-dim);
 }
@@ -555,20 +557,29 @@
 /* --- hole editor layout -------------------------------------------------- */
 /* Own flex column rather than relying on `.screen-body`, so the map region
    can never be squeezed out by the controls below it. */
+/* `.hedit` is a flex ITEM of `.screen-body` (itself a flex column), so it
+   claims the remaining height with flex — never with `height: 100%`, which
+   needs an unbroken chain of resolved percentage heights that Android WebView
+   does not reliably provide. */
 .hedit {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
 }
+
+/* The map gets an absolute pixel height and `flex-shrink: 0`. No `vh`, no
+   `%`, no flex negotiation — the one arrangement a WebView cannot collapse.
+   Everything else on the screen scrolls around it. */
 .hedit__map {
-  flex: 1 1 0;
-  min-height: 200px;
+  flex: 0 0 auto;
+  height: var(--map-h);
+  min-height: var(--map-h);
   position: relative;
   border-bottom: var(--bw) solid var(--cyan-dim);
 }
 .hedit__body {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
