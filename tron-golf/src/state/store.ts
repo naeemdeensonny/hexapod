@@ -160,6 +160,71 @@ export function updateSettings(patch: Partial<Settings>) {
   commit({ ...state, settings: { ...state.settings, ...patch } });
 }
 
+/* --- backup / restore --------------------------------------------------- */
+
+/** Envelope version, so a future import can detect and migrate old backups. */
+const BACKUP_VERSION = 1;
+
+type Backup = {
+  app: 'tron-golf';
+  version: number;
+  exportedAt: string;
+  state: AppState;
+};
+
+/** Serialise the entire app (courses, rounds, settings) to a JSON string. */
+export function exportBackup(): string {
+  const backup: Backup = {
+    app: 'tron-golf',
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+  return JSON.stringify(backup, null, 2);
+}
+
+/** Human-friendly file name for a backup, e.g. `tron-golf-backup-2026-07-29.json`. */
+export function backupFilename(): string {
+  return `tron-golf-backup-${new Date().toISOString().slice(0, 10)}.json`;
+}
+
+export type ImportResult =
+  | { ok: true; courses: number; rounds: number }
+  | { ok: false; error: string };
+
+/**
+ * Replace all local data with the contents of a backup string. Validates the
+ * envelope before touching anything, so a bad paste can't wipe your data.
+ * Accepts both the wrapped `{ app, version, state }` envelope and a bare
+ * `AppState` (courses/settings) for resilience.
+ */
+export function importBackup(raw: string): ImportResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw.trim());
+  } catch {
+    return { ok: false, error: 'Not valid backup text — check you pasted the whole thing.' };
+  }
+
+  const obj = parsed as Partial<Backup> & Partial<AppState>;
+  const incoming: Partial<AppState> | undefined =
+    obj && (obj as Backup).state ? (obj as Backup).state : (obj as AppState);
+
+  if (!incoming || !Array.isArray(incoming.courses)) {
+    return { ok: false, error: 'This file has no courses — not a TRON Golf backup.' };
+  }
+
+  const next: AppState = {
+    courses: incoming.courses,
+    rounds: Array.isArray(incoming.rounds) ? incoming.rounds : [],
+    activeRound: incoming.activeRound ?? null,
+    settings: { ...DEFAULT_SETTINGS, ...(incoming.settings ?? {}) },
+  };
+
+  commit(next);
+  return { ok: true, courses: next.courses.length, rounds: next.rounds.length };
+}
+
 /* --- derived helpers ---------------------------------------------------- */
 
 export function courseById(id: string): Course | undefined {
