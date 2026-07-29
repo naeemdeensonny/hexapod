@@ -96,22 +96,29 @@ export default function GoogleMap({ centre, zoom = 17, className, onReady, onMap
   return <div ref={el} className={`sat-map ${className ?? ''}`} />;
 }
 
-/* --- heading -------------------------------------------------------------- */
+/* --- camera orientation --------------------------------------------------- */
 
 /**
- * Point the map along `heading` (degrees clockwise from north).
+ * Orient the map: rotate to `heading` (degrees clockwise from north) and pitch
+ * the camera to `tilt` (degrees from straight-down; 0 = flat bird's-eye,
+ * ~45-67.5 = Grint-style down-the-fairway perspective).
  *
- * Applied twice on purpose: `fitBounds` is asynchronous and snaps the map back
- * to north, so the value has to be re-set once the camera settles. Setting it
- * immediately as well covers the case where `fitBounds` changes nothing and
- * therefore never fires `idle`.
+ * Applied twice on purpose: `fitBounds` is asynchronous and resets both heading
+ * and tilt to zero, so they have to be re-set once the camera settles. Setting
+ * them immediately as well covers the case where `fitBounds` changes nothing
+ * and therefore never fires `idle`.
  *
- * No-ops unless the map was built with a vector Map ID — see
- * `GOOGLE_MAPS_ID` in `provider.ts`.
+ * No-ops unless the map was built with a vector Map ID (heading/tilt are
+ * ignored on raster maps) — see `GOOGLE_MAPS_ID` in `provider.ts`. Tilt also
+ * requires the Map ID to have had "Tilt" enabled when it was created.
  */
-export function faceHeading(map: google.maps.Map, heading: number): void {
-  map.setHeading(heading);
-  google.maps.event.addListenerOnce(map, 'idle', () => map.setHeading(heading));
+export function faceHeading(map: google.maps.Map, heading: number, tilt = 0): void {
+  const apply = () => {
+    map.setHeading(heading);
+    map.setTilt(tilt);
+  };
+  apply();
+  google.maps.event.addListenerOnce(map, 'idle', apply);
 }
 
 /* --- bounds --------------------------------------------------------------- */

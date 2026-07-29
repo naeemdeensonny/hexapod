@@ -16,6 +16,13 @@ import type { LatLng } from '../state/types';
 /** Slack around the hole so the tee and green never sit hard against the edge. */
 const HOLE_PAD_M = 180;
 
+/**
+ * Camera pitch for the playing view, in degrees from straight-down. A Grint-
+ * style down-the-fairway perspective rather than a flat overhead. Needs a
+ * vector Map ID with tilt enabled; ignored otherwise. Tune here if it feels
+ * too steep or too flat. */
+const PLAY_TILT = 60;
+
 export default function PlayMap() {
   const nav = useNavigate();
   const { activeRound, settings } = useStore();
@@ -115,7 +122,7 @@ export default function PlayMap() {
     if (hole.tee) bounds.extend({ lat: hole.tee.lat, lng: hole.tee.lng });
     if (hole.greenCentre) bounds.extend({ lat: hole.greenCentre.lat, lng: hole.greenCentre.lng });
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
-    if (h !== null) faceHeading(map, h);
+    if (h !== null) faceHeading(map, h, PLAY_TILT);
 
     return () => {
       staticMarkers.current.forEach((m) => m.setMap(null));
@@ -267,9 +274,9 @@ export default function PlayMap() {
     if (!bounds.isEmpty()) map.fitBounds(bounds, 50);
     else if (from) map.setCenter({ lat: from.lat, lng: from.lng });
 
-    // fitBounds snaps back to north — re-apply the tee → green heading.
+    // fitBounds snaps back to north and flat — re-apply heading and tilt.
     if (hole?.tee && hole.greenCentre) {
-      faceHeading(map, bearing(hole.tee, hole.greenCentre));
+      faceHeading(map, bearing(hole.tee, hole.greenCentre), PLAY_TILT);
     }
   }
 
