@@ -1,9 +1,9 @@
 # TRON Golf — Handoff Memo
 
-**Date:** 2026-07-29 (third session update)
+**Date:** 2026-07-29 (fourth session update)
 **Repo:** `naeemdeensonny/hexapod`, subfolder `tron-golf/`
 **Branch:** `claude/tron-golf-v1-ui-xnoqs6`
-**Latest commit:** `f44208f`
+**Latest commit:** `7081701`
 
 ---
 
@@ -66,31 +66,45 @@ built APK still has the old layout. This means `git pull` did not overwrite the
 local `src/screens/HoleEditor.tsx` — either there is a local uncommitted
 modification, a merge conflict, or the pull failed silently.
 
-### THE FIRST THING TO DO
+### THE FIRST THING TO DO — use `reset --hard`, not `pull`
 
-On the Windows machine, in CMD:
+`git pull` has repeatedly failed to update this working copy (local edits, wrong
+branch, or a silently-failed merge — never diagnosed). Stop using it. This
+forces every tracked file to match the remote exactly and cannot silently
+no-op. Gitignored files (`.env.local`, `android/local.properties`) survive it.
 
 ```
 cd "C:\Users\Naeem Deen\tron-golf-tmp\tron-golf"
-git status
-git diff src/screens/HoleEditor.tsx
+git fetch origin claude/tron-golf-v1-ui-xnoqs6
+git reset --hard origin/claude/tron-golf-v1-ui-xnoqs6
 ```
 
-If `git status` shows `HoleEditor.tsx` as modified → local changes are blocking the pull.
-Fix with:
+**Then verify the new code actually landed — do not skip this:**
+
 ```
-git checkout -- src/screens/HoleEditor.tsx
-git pull origin claude/tron-golf-v1-ui-xnoqs6
+findstr /C:"PIN POINTS" src\screens\HoleEditor.tsx
 ```
 
-Then verify the file no longer contains "PIN POINTS":
-```
-findstr "PIN POINTS" src\screens\HoleEditor.tsx
-```
-Should return nothing. If it still returns a match → the pull failed again.
+Must print **nothing**. If it prints a line, the working copy is still stale and
+nothing downstream matters — stop and fix the checkout before building.
 
-Then build and install:
+If that directory turns out not to be a git clone of `hexapod` at all (the
+`git fetch` errors), re-clone into a fresh folder and restore the two
+gitignored files:
+
 ```
+git clone https://github.com/naeemdeensonny/hexapod.git C:\tron\hexapod
+cd C:\tron\hexapod
+git checkout claude/tron-golf-v1-ui-xnoqs6
+cd tron-golf
+echo VITE_GOOGLE_MAPS_KEY=AIzaSyCIrOP4dgGHdOpNW_JIGkpdvkxoA80q1NA> .env.local
+echo sdk.dir=C:\\Users\\Naeem Deen\\AppData\\Local\\Android\\Sdk> android\local.properties
+```
+
+### Then build
+
+```
+npm install
 npm run build
 npx @capacitor/cli sync
 cd android
@@ -99,56 +113,63 @@ set PATH=%JAVA_HOME%\bin;%PATH%
 .\gradlew clean assembleDebug
 ```
 
-**UNINSTALL the old app from the phone first** (long-press → Uninstall).
-Then install the new APK from:
-`android\app\build\outputs\apk\debug\app-debug.apk`
+**UNINSTALL the old app from the phone first** (long-press → Uninstall — do not
+install over the top; WebView storage survives that). Then install
+`android\app\build\outputs\apk\debug\app-debug.apk`.
 
-Open app → check footer: `V1 · OFFLINE-FIRST · BUILD 07-29 HH:MM`
-If it shows today's date → build is fresh → test hole editor.
+Open app → footer must read `V1 · OFFLINE-FIRST · BUILD 07-29 HH:MM` with
+today's date. Then open a hole in the editor.
 
 ---
 
-## 3. CSS layout fix (also in repo, commit f44208f)
+## 3. CSS layout fix — DONE and VERIFIED (commit `7081701`)
 
-Even after the correct JS arrives, the CSS must also be correct. These are the
-relevant rules in `src/theme/components.css`:
+The map height used to depend on two things Android WebView does not resolve
+reliably:
 
+1. `flex: 0 0 44vh` — `vh` is the **large-viewport** unit in Chrome/WebView
+2. `.hedit { height: 100% }` — needs an unbroken chain of resolved percentage
+   heights from `html` all the way down, which the WebView does not guarantee
+
+Both dependencies are now gone. Final rules:
+
+`src/theme/tokens.css`:
 ```css
-/* screen-body must have min-height:0 and flush must be overflow:hidden */
-.screen-body {
-  flex: 1;
-  min-height: 0;          /* ← required for flex constraint to propagate */
-  overflow-y: auto;
-  ...
-}
-.screen-body.flush {
-  padding: 0;
-  gap: 0;
-  overflow: hidden;       /* ← child containers own their own scrolling */
-}
-
-/* map fills remaining space — no vh units (unreliable in Android WebView) */
-.hedit__map {
-  flex: 1 1 0;            /* ← grows to fill, not flex:0 0 44vh */
-  min-height: 200px;
-  position: relative;
-  border-bottom: ...;
-}
-
-/* controls claim only their natural height */
-.hedit__body {
-  flex: 0 0 auto;         /* ← was flex:1 1 auto (wrong — stole map space) */
-  min-height: 0;
-  overflow-y: auto;
-  ...
-}
+:root { --map-h: 260px; }
+@media (min-height: 700px) { :root { --map-h: 320px; } }
+@media (min-height: 820px) { :root { --map-h: 380px; } }
+@media (min-height: 950px) { :root { --map-h: 440px; } }
 ```
 
-The old code had `flex: 0 0 44vh` on `.hedit__map`. `vh` = large-viewport height
-in Chrome/WebView (includes browser chrome area). Combined with the missing
-`min-height: 0` on `.screen-body` and `overflow-y: auto` on the flush variant,
-this created a circular height dependency and the map resolved to ~0px. The fix
-eliminates all `vh` and `height: 100%` dependency.
+`src/theme/components.css`:
+```css
+.screen-body       { flex: 1; min-height: 0; overflow-y: auto; }
+.screen-body.flush { padding: 0; gap: 0; overflow: hidden; }
+
+/* flex ITEM of .screen-body — never `height: 100%` */
+.hedit { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+
+/* absolute px + flex-shrink:0 — flex negotiation cannot touch it */
+.hedit__map  { flex: 0 0 auto; height: var(--map-h); min-height: var(--map-h); }
+
+/* takes the remainder and scrolls internally */
+.hedit__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+```
+
+`.play` / `.play__map` got the same treatment.
+
+**Verified in headless Chromium** at four viewports with the real production
+build. Measured `.hedit__map` heights:
+
+| Viewport | map height | nav overlap | SAVE HOLE |
+|---|---|---|---|
+| 412×915 | 380px | none | reachable |
+| 412×968 | 440px | none | reachable |
+| 360×640 | 260px | none | reachable |
+| 412×560 (deliberately squashed) | 260px | none | reachable |
+
+Media queries on `min-height` read the real viewport and need no percentage
+chain, so they degrade to the 260px floor rather than to zero.
 
 ---
 
