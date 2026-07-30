@@ -1,0 +1,13 @@
+{
+  "appId": "com.tronn.golf",
+  "appName": "TRON Golf",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#000820"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

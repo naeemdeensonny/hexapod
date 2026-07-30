@@ -1,0 +1,26 @@
+/* Map chrome — imagery itself is never filtered or stylised. */
+
+.sat-map {
+  width: 100%;
+  height: 100%;
+  background: var(--panel-sunk);
+  z-index: 0;
+}
+
+/* Shown when VITE_GOOGLE_MAPS_KEY is not set */
+.sat-map--nokey {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px;
+  line-height: 1.6;
+}
+
+/* Google Maps attribution strip overrides */
+.gm-style .gm-style-cc {
+  background: rgba(5, 10, 18, 0.78) !important;
+}
