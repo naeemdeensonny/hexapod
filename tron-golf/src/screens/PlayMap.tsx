@@ -9,7 +9,7 @@ import GoogleMap, {
   midpoint,
   paddedBounds,
 } from '../map/GoogleMap';
-import { bearing, distanceM, fmtDist } from '../state/geo';
+import { bearing, destination, distanceM, fmtDist } from '../state/geo';
 import { watchLocation, type GeoErrorKind } from '../state/geolocation';
 import { courseById, setCurrentHole, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
@@ -32,6 +32,15 @@ const PLAY_TILT = 60;
  * between holes. */
 const ON_COURSE_M = 800;
 
+/** How far the tee marker may be dragged from its surveyed spot, in metres.
+ *  Lets you set the exact box you are playing from without letting the pin
+ *  wander onto another hole. */
+const TEE_DRAG_RADIUS_M = 30;
+
+/** While following, the camera re-centres only after you have moved at least
+ *  this far — so it glides with your walk instead of twitching on every fix. */
+const FOLLOW_STEP_M = 12;
+
 export default function PlayMap() {
   const nav = useNavigate();
   const { activeRound, settings } = useStore();
@@ -43,14 +52,27 @@ export default function PlayMap() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [target, setTarget] = useState<LatLng | null>(null);
   const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
+  // A per-hole nudge of the tee, within TEE_DRAG_RADIUS_M of the surveyed pin.
+  // Session-only: it tunes where distances are measured from for the box you
+  // are actually on, and never overwrites the course's saved tee.
+  const [teeOverride, setTeeOverride] = useState<LatLng | null>(null);
+  // Camera keeps pace with your GPS position; a manual pan switches it off.
+  const [follow, setFollow] = useState(true);
 
   type Leg = { line: google.maps.Polyline; label: google.maps.Marker };
 
   const staticMarkers = useRef<google.maps.Marker[]>([]);
   const playerMarker = useRef<google.maps.Marker | null>(null);
   const targetMarker = useRef<google.maps.Marker | null>(null);
+  const teeMarker = useRef<google.maps.Marker | null>(null);
+  const teeRing = useRef<google.maps.Circle | null>(null);
   const legs = useRef<Map<string, Leg>>(new Map());
   const fenceRef = useRef<google.maps.LatLngBoundsLiteral | null>(null);
+  const followAnchor = useRef<LatLng | null>(null);
+
+  // Where distances measure from at the tee end: the dragged pin if set,
+  // otherwise the surveyed tee.
+  const effectiveTee = teeOverride ?? hole?.tee ?? null;
 
   const centre = hole?.tee ?? course?.centre ?? { lat: 0, lng: 0 };
 
@@ -93,12 +115,38 @@ export default function PlayMap() {
   const onCourse = gpsDistToHole <= ON_COURSE_M;
   const activePlayer = onCourse ? player : null;
 
-  const from = activePlayer ?? hole?.tee ?? null;
+  const from = activePlayer ?? effectiveTee;
 
-  /* --- default target = green centre -------------------------------------- */
+  /* --- default target = green centre, and reset per-hole adjustments ------- */
   useEffect(() => {
     if (hole?.greenCentre) setTarget(hole.greenCentre);
+    setTeeOverride(null); // the drag is specific to the hole you were on
+    setFollow(true); // re-arm camera follow for the new hole
+    followAnchor.current = null;
   }, [hole?.number, hole?.greenCentre]);
+
+  /* --- camera follows the player while `follow` is on ---------------------- */
+  useEffect(() => {
+    if (!map || !follow || !activePlayer) return;
+    // Glide only after a real step, so the camera isn't nudged by GPS jitter.
+    if (followAnchor.current && distanceM(followAnchor.current, activePlayer) < FOLLOW_STEP_M) {
+      return;
+    }
+    followAnchor.current = activePlayer;
+    // Keep both you and the green in shot by centring on their midpoint; a
+    // plain panTo preserves the current zoom, heading and tilt (no jarring
+    // refit), so it reads as the map walking along with you.
+    const green = hole?.greenCentre;
+    map.panTo(green ? midpoint(activePlayer, green) : activePlayer);
+  }, [map, follow, activePlayer, hole?.greenCentre]);
+
+  /* --- a manual pan turns following off ------------------------------------ */
+  useEffect(() => {
+    if (!map) return;
+    const onDrag = () => setFollow(false);
+    const l = map.addListener('dragstart', onDrag);
+    return () => l.remove();
+  }, [map]);
 
   /* --- pan fence ----------------------------------------------------------- */
 
@@ -145,7 +193,7 @@ export default function PlayMap() {
       );
     };
 
-    if (hole.tee) add(hole.tee, 'tee', 'T', 'Tee');
+    // Tee is a separate draggable marker (see below); green + hazards are fixed.
     if (hole.greenCentre) add(hole.greenCentre, 'flag', '', 'Green');
     for (const h of hole.hazards ?? []) add(h.point, 'hazard', h.name[0] ?? 'H', h.name);
 
@@ -203,6 +251,71 @@ export default function PlayMap() {
     [],
   );
 
+  /* --- draggable tee, clamped to a 30 m radius ---------------------------- */
+  useEffect(() => {
+    if (!map || !hole?.tee) {
+      teeMarker.current?.setMap(null);
+      teeMarker.current = null;
+      teeRing.current?.setMap(null);
+      teeRing.current = null;
+      return;
+    }
+    const origin = hole.tee; // the surveyed pin — the centre of the allowed circle
+
+    // Faint ring showing how far the tee may be nudged.
+    teeRing.current?.setMap(null);
+    teeRing.current = new google.maps.Circle({
+      map,
+      center: { lat: origin.lat, lng: origin.lng },
+      radius: TEE_DRAG_RADIUS_M,
+      strokeColor: '#35e0ff',
+      strokeOpacity: 0.5,
+      strokeWeight: 1,
+      fillColor: '#35e0ff',
+      fillOpacity: 0.06,
+      clickable: false,
+      zIndex: 4,
+    });
+
+    // Clamp any position to within the ring: keep the drag bearing but cap the
+    // distance, so the pin slides along the boundary rather than sticking.
+    const clamp = (p: LatLng): LatLng => {
+      const d = distanceM(origin, p);
+      return d <= TEE_DRAG_RADIUS_M ? p : destination(origin, bearing(origin, p), TEE_DRAG_RADIUS_M);
+    };
+
+    const marker = new google.maps.Marker({
+      position: { lat: origin.lat, lng: origin.lng },
+      map,
+      icon: markerIcon('tee', 'T'),
+      draggable: true,
+      zIndex: 20,
+      title: 'Tee — drag to your box (30 m)',
+    });
+    const onMove = () => {
+      const pos = marker.getPosition();
+      if (!pos) return;
+      const clamped = clamp({ lat: pos.lat(), lng: pos.lng() });
+      // Snap the marker back if the drag went past the ring.
+      if (clamped.lat !== pos.lat() || clamped.lng !== pos.lng()) {
+        marker.setPosition({ lat: clamped.lat, lng: clamped.lng });
+      }
+      setTeeOverride(clamped);
+    };
+    marker.addListener('drag', onMove);
+    marker.addListener('dragend', onMove);
+    teeMarker.current = marker;
+
+    return () => {
+      marker.setMap(null);
+      teeMarker.current = null;
+      teeRing.current?.setMap(null);
+      teeRing.current = null;
+    };
+    // Rebuilt only when the hole (and thus the surveyed tee) changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, hole?.number]);
+
   /* --- player marker (only while on the course) --------------------------- */
   useEffect(() => {
     if (!map) return;
@@ -237,7 +350,7 @@ export default function PlayMap() {
     const push = (key: string, a?: LatLng | null, b?: LatLng | null) => {
       if (a && b && distanceM(a, b) > 3) wanted.push({ key, a, b });
     };
-    push('tee-you', hole?.tee, activePlayer);
+    push('tee-you', effectiveTee, activePlayer);
     push('you-target', from, target);
     push('target-green', target, green);
 
@@ -285,7 +398,7 @@ export default function PlayMap() {
       leg.label.setMap(null);
       live.delete(key);
     }
-  }, [map, activePlayer, from, target, hole, settings.units]);
+  }, [map, activePlayer, from, target, effectiveTee, hole, settings.units]);
 
   useEffect(
     () => () => {
@@ -296,6 +409,10 @@ export default function PlayMap() {
       legs.current.clear();
       playerMarker.current?.setMap(null);
       playerMarker.current = null;
+      teeMarker.current?.setMap(null);
+      teeMarker.current = null;
+      teeRing.current?.setMap(null);
+      teeRing.current = null;
     },
     [],
   );
@@ -317,9 +434,21 @@ export default function PlayMap() {
     else if (from) map.setCenter({ lat: from.lat, lng: from.lng });
 
     // fitBounds snaps back to north and flat — re-apply heading and tilt.
-    if (hole?.tee && hole.greenCentre) {
-      faceHeading(map, bearing(hole.tee, hole.greenCentre), PLAY_TILT);
+    if (effectiveTee && hole?.greenCentre) {
+      faceHeading(map, bearing(effectiveTee, hole.greenCentre), PLAY_TILT);
     }
+  }
+
+  // Toggle whether the camera keeps pace with GPS. Turning it on re-frames now.
+  function toggleFollow() {
+    setFollow((on) => {
+      const next = !on;
+      if (next) {
+        followAnchor.current = null;
+        recentre();
+      }
+      return next;
+    });
   }
 
   return (
@@ -380,6 +509,14 @@ export default function PlayMap() {
           </div>
 
           <div className="btn-row">
+            <Button
+              size="sm"
+              onClick={toggleFollow}
+              style={follow ? { borderColor: 'var(--cyan)', color: 'var(--cyan)' } : undefined}
+              title="Keep the map centred on your position"
+            >
+              {follow ? 'FOLLOW ●' : 'FOLLOW ○'}
+            </Button>
             <Button size="sm" onClick={recentre}>
               RE-CENTRE
             </Button>
