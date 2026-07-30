@@ -64,6 +64,7 @@ export default function Screen({
   children,
   flush,
   hideNav,
+  hideHeader,
 }: {
   title: string;
   subtitle?: string;
@@ -72,23 +73,27 @@ export default function Screen({
   children: ReactNode;
   flush?: boolean;
   hideNav?: boolean;
+  /** Skip the chrome header bar — for screens that draw their own top area. */
+  hideHeader?: boolean;
 }) {
   const nav = useNavigate();
   return (
     <div className="app grid-texture">
-      <header className="hdr">
-        {back && (
-          <button
-            className="hdr__back"
-            aria-label="Back"
-            onClick={() => (back === true ? nav(-1) : nav(back))}
-          >
-            {'<'}
-          </button>
-        )}
-        <h1 className="hdr__title">{title}</h1>
-        {subtitle && <span className="hdr__sub">{subtitle}</span>}
-      </header>
+      {!hideHeader && (
+        <header className="hdr">
+          {back && (
+            <button
+              className="hdr__back"
+              aria-label="Back"
+              onClick={() => (back === true ? nav(-1) : nav(back))}
+            >
+              {'<'}
+            </button>
+          )}
+          <h1 className="hdr__title">{title}</h1>
+          {subtitle && <span className="hdr__sub">{subtitle}</span>}
+        </header>
+      )}
 
       <main className={`screen-body ${flush ? 'flush' : ''}`}>{children}</main>
 

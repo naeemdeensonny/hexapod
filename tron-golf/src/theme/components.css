@@ -644,6 +644,47 @@
   color: var(--amber);
 }
 
+/* --- menu scene (home screen pixel-art strip) ----------------------------- */
+.menu-scene {
+  flex: 0 0 auto;
+  height: 150px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: var(--bw) solid var(--cyan-dim);
+}
+.menu-scene__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+.menu-title {
+  font-family: var(--font-pixel);
+  color: var(--text);
+  font-size: 22px;
+  text-align: center;
+  letter-spacing: 2px;
+  padding: var(--sp-4) 0 var(--sp-2);
+  text-shadow: 0 0 14px var(--cyan-glow);
+}
+/* Own scroll region below the fixed-height scene — same reasoning as
+   .hedit__body: on a short screen the button stack must still be reachable,
+   so it cannot inherit .screen-body.flush's overflow:hidden. */
+.menu-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
 /* --- hole nav on the playing map ----------------------------------------- */
 .holenav {
   display: flex;
