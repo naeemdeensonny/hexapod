@@ -10,6 +10,7 @@ import GoogleMap, {
   paddedBounds,
 } from '../map/GoogleMap';
 import { bearing, distanceM, fmtDist } from '../state/geo';
+import { watchLocation, type GeoErrorKind } from '../state/geolocation';
 import { courseById, setCurrentHole, useStore } from '../state/store';
 import type { LatLng } from '../state/types';
 
@@ -39,8 +40,9 @@ export default function PlayMap() {
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [player, setPlayer] = useState<LatLng | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
   const [target, setTarget] = useState<LatLng | null>(null);
-  const [gpsError, setGpsError] = useState(false);
+  const [gpsError, setGpsError] = useState<GeoErrorKind | null>(null);
 
   type Leg = { line: google.maps.Polyline; label: google.maps.Marker };
 
@@ -54,16 +56,28 @@ export default function PlayMap() {
 
   /* --- GPS ---------------------------------------------------------------- */
   useEffect(() => {
-    if (!navigator.geolocation) { setGpsError(true); return; }
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        setGpsError(false);
-        setPlayer({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    // watchLocation resolves its cleanup asynchronously, so guard against the
+    // effect being torn down before the watch id exists.
+    let stop: (() => void) | null = null;
+    let disposed = false;
+
+    watchLocation(
+      settings.gpsAccuracy === 'high',
+      (fix) => {
+        setGpsError(null);
+        setAccuracy(fix.accuracy);
+        setPlayer({ lat: fix.lat, lng: fix.lng });
       },
-      () => setGpsError(true),
-      { enableHighAccuracy: settings.gpsAccuracy === 'high', maximumAge: 3000, timeout: 15000 },
-    );
-    return () => navigator.geolocation.clearWatch(id);
+      (kind) => setGpsError(kind),
+    ).then((cleanup) => {
+      if (disposed) cleanup();
+      else stop = cleanup;
+    });
+
+    return () => {
+      disposed = true;
+      stop?.();
+    };
   }, [settings.gpsAccuracy]);
 
   // Only trust the GPS fix when it is near the current hole. Off the course
@@ -321,13 +335,23 @@ export default function PlayMap() {
         </div>
 
         <div className="play__panel">
-          {gpsError ? (
+          {gpsError === 'denied' ? (
             <p className="muted" style={{ color: 'var(--red)', fontSize: 11 }}>
-              NO GPS FIX — distances measured from the tee box.
+              LOCATION BLOCKED — enable it for TRON Golf in your phone's app settings, then
+              reopen this screen.
+            </p>
+          ) : gpsError ? (
+            <p className="muted" style={{ color: 'var(--red)', fontSize: 11 }}>
+              NO GPS FIX YET — distances from the tee box. Move to open sky; it can take a
+              moment outdoors.
             </p>
           ) : player && !onCourse ? (
             <p className="muted" style={{ color: 'var(--amber)', fontSize: 11 }}>
               NOT AT THE COURSE — showing tee to green. GPS tracking starts when you arrive.
+            </p>
+          ) : player && accuracy !== null && accuracy > 30 ? (
+            <p className="muted" style={{ color: 'var(--amber)', fontSize: 11 }}>
+              ACQUIRING GPS — accuracy ±{Math.round(accuracy)} m, still sharpening.
             </p>
           ) : null}
 

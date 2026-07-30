@@ -38,4 +38,15 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- GPS distances on the play map. FINE for on-course accuracy, COARSE as
+         the fallback the OS offers when the user grants approximate only. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Location is core to the play map but not to scoring, so it is not
+         required to install (required=false), and GPS is preferred but not
+         mandated so devices without a GPS chip can still use approximate. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
 </manifest>
